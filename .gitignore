@@ -10,7 +10,7 @@ Desktop.ini
 # Local logs / temp
 *.log
 
-# Environment & API Keys / Secrets
+# Environment & API Keys / Secrets & Confidential Jackpot Rules
 .env
 .env.*
 *.env
@@ -20,4 +20,9 @@ secrets/
 config.secret.json
 *secret*
 api_key*
+*jackpot*secret*
+jackpot-config.*
+jackpot-pattern.*
+jackpot-engine.*
+
 

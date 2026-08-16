@@ -45,3 +45,7 @@ For multi-step tasks, state a brief plan:
 
 ---
 These guidelines are working if: fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after.
+
+## 5. Security & Confidentiality
+- **Jackpot Pattern Confidentiality**: All jackpot pattern logic, probability tables, and confidential game math MUST be isolated from public repository commits (via `.gitignore` protected config files, encrypted modules, or server-side API processing) to prevent unauthorized inspection.
+
