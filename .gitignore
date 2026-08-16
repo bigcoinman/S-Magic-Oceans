@@ -9,3 +9,15 @@ Desktop.ini
 
 # Local logs / temp
 *.log
+
+# Environment & API Keys / Secrets
+.env
+.env.*
+*.env
+*.key
+*.pem
+secrets/
+config.secret.json
+*secret*
+api_key*
+
