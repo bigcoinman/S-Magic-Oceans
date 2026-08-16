@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magic Oceans - Precision Calibration</title>
+    <style>
+        :root {
+            --primary-gold: #ffd700;
+            --text-yellow: #ffff00;
+            /* [좌표 보정 변수] */
+            --header-top: 1%;
+            --multiplier-top: 72.5%;           /* ↕️ 배당창 상하 위치 */
+            --reels-top: 76%;
+            --bottom-bar-bottom: 0%;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+        body { background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Arial', sans-serif; }
+
+        #game-container {
+            position: relative; width: 100vw; height: calc(100vw * 16 / 9);
+            max-height: 100vh; max-width: calc(100vh * 9 / 16);
+            background-color: #000; overflow: hidden;
+        }
+
+        .background {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('assets/bg_main.png') no-repeat center center;
+            background-size: cover; z-index: 1;
+            }
+            /* 물방울 컨테이너 (클릭 방해 안 하도록 설정) */
+        #bubble-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* 물방울 때문에 버튼 클릭이 안 되는 현상 방지 */
+            z-index: 2;           /* 배경(1)보다는 위, 릴(4)과 UI(10)보다는 아래 */
+            overflow: hidden;
+        }
+        /* 1. 3D 입체 투명 유리 물방울 베이스 */
+        .bubble {
+            position: absolute;
+            bottom: -8%;
+            border-radius: 50%;
+            pointer-events: none;
+            
+            /* 투명한 바다빛 그라디언트 채우기 */
+            background: radial-gradient(
+                circle at 65% 65%,
+                rgba(255, 255, 255, 0.05) 0%,
+                rgba(150, 220, 255, 0.15) 60%,
+                rgba(80, 180, 255, 0.35) 100%
+            );
+            
+            /* 입체 반사광 (내부 테두리 빛 + 외부 은은한 글로우) */
+            box-shadow: 
+                inset 0 0 6px rgba(255, 255, 255, 0.6),
+                inset -2px -2px 8px rgba(0, 150, 255, 0.4),
+                0 0 10px rgba(180, 230, 255, 0.3);
+                
+            backdrop-filter: blur(0.5px); /* 뒷배경을 미세하게 투과 */
+            animation: floatUp linear forwards;
+        }
+
+        /* 2. 물방울 좌측 상단 반사 하이라이트 (빛 맺힘 효과) */
+        .bubble::before {
+            content: '';
+            position: absolute;
+            top: 15%;
+            left: 18%;
+            width: 25%;
+            height: 25%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff 40%, rgba(255, 255, 255, 0) 80%);
+            opacity: 0.85;
+            transform: rotate(-30deg);
+        }
+
+        /* 3. 크기 정의 */
+        .bubble-small { width: 10px; height: 10px; }
+        .bubble-medium { width: 18px; height: 18px; }
+        .bubble-large { width: 28px; height: 28px; }
+        
+
+        /* 3가지 크기 변화 */
+        .bubble-small { width: 8px; height: 8px; }
+        .bubble-medium { width: 14px; height: 14px; }
+        .bubble-large { width: 22px; height: 22px; }
+
+        /* 아래에서 위로 올라갈 때 좌우로 살랑살랑 흔들리는 애니메이션 */
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) translateX(0) scale(0.8);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+                transform: translateY(-10vh) translateX(12px) scale(0.9);
+            }
+            25% {
+                transform: translateY(-30vh) translateX(-14px) scale(1);
+            }
+            45% {
+                transform: translateY(-50vh) translateX(15px) scale(1.05);
+            }
+            65% {
+                transform: translateY(-70vh) translateX(-12px) scale(1.1);
+            }
+            85% {
+                opacity: 0.8;
+                transform: translateY(-90vh) translateX(10px) scale(1.15);
+            }
+            100% {
+                transform: translateY(-115vh) translateX(-5px) scale(1.2);
+                opacity: 0; /* 꼭대기에서 자연스럽게 사라짐 */
+            }
+        }
+                    
+        /* 상단 바 */
+        .top-bar {
+            position: absolute; top: var(--header-top); width: 100%; height: 6%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 3%; z-index: 10;
+        }
+        .header-box { position: relative; display: flex; align-items: center; justify-content: center; }
+        .bg-box { width: 110px; height: auto; display: block; }
+        .text-val {
+            position: absolute; 
+            width: 100%; 
+            text-align: center;
+            color: var(--text-yellow); 
+            font-weight: bold; 
+            font-size: 1.8vh;                     /* ⬅️ cqw 대신 2.1vh 로 수정 */
+            text-shadow: 1px 1px 2px #000; 
+            top: 50%; 
+            transform: translateY(-50%);
+            z-index: 11;
+        }
+        /* 햄버거 메뉴 버튼 크기 */
+        .btn-menu {
+            position: absolute;
+            cursor: pointer;
+            top: 37%;
+            transform: translateY(-50%);
+            right: 2.5%;
+            width: 8.5%;      /* ⬅️ 38px 대신 %로 설정하여 화면과 같이 축소/확대 */
+            height: auto;
+        }
+
+        /* CREDIT 박스 가로 폭 */
+        .credit-box {
+            position: absolute;
+            left: 17%;
+            top: 35%;
+            transform: translateY(-50%);
+            width: 28%;       /* ⬅️ 120px 대신 %로 변경 */
+        }
+        
+        /* 오른쪽 칩(0) 박스 가로 폭 */
+        .chip-box {
+            position: absolute;
+            left: 74%;
+            top: 35%;
+            transform: translateY(-50%);
+            width: 18%;       /* ⬅️ 80px 대신 %로 변경 */
+        }
+                
+        /* 배당창 */
+        .multiplier-window {
+            position: absolute; 
+            top: var(--multiplier-top); 
+            left: 50%;                            /* ↔️ 좌우 위치: 50%는 화면 정중앙 */
+            transform: translate(-50%, -50%);
+            width: 10.8%;                          /* 🔍 배당창 가로 너비 (창문 크기) */ 
+            height: 4%;                          /* 🔍 배당창 세로 높이 (보여질 창틀 높이) */
+            z-index: 5; 
+            overflow: hidden;                      /* 창문 바깥으로 튀어나간 이미지 숨김 */
+        }
+        .multiplier-strip {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;                          /* 기준 높이 지정 */
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            transition: top 0.1s linear;
+        }
+        .multiplier-strip img { 
+            width: 100%;                           /* 🔍 가로 꽉 차게 */
+            height: 100%;                          /* 이미지 세로 높이를 창문에 맞춤 */
+            min-height: 100%;                      /* 크기 축소 방지 */
+            object-fit: contain;                   /* 비율 유지하면서 중앙 정렬 */  
+            display: block;
+            transform: translateY(-1px);
+        }
+
+        /* 릴 영역 */
+        .reels-container {
+            position: absolute; 
+            top: var(--reels-top); 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 76%;              /* ↔️ 전체 릴 영역의 가로 폭 */
+            height: 12%;             /* ↕️ 릴 영역의 높이 */
+            display: flex; justify-content: space-between; z-index: 4;
+        }
+        /* 개별 릴 1개의 가로 폭 */
+        .reel {
+            width: 31%;             /* ↔️ 3개 릴 각각의 가로 너비 */
+            height: 100%; overflow: hidden; position: relative;
+            border: none !important; box-shadow: none !important; background: none !important;
+        }
+        /* 당첨 라인 위치 및 기본 상태(숨김) */
+        .jackpot-line {
+            position: absolute;
+            top: 65%;                            /* ↕️ 1. 상하 위치 */
+            left: 50%;                           /* ↔️ 2. 좌우 위치 */
+            transform: translate(-50%, -50%);    /* 중심축 보정 (그대로 유지) */
+            width: 97%;                          /* 🔍 3. 가로 크기 (폭) */
+            height: auto;                        /* 세로 비율 자동 유지 */
+            z-index: 20;                         /* 심볼들보다 위에 보이도록 설정 */
+            pointer-events: none;                /* 클릭 방해 방지 */
+            display: none;                       /* 평소에는 숨겨둠 */
+        }
+        /* 반짝반짝 빛나는 애니메이션 효과 정의 */
+        @keyframes jackpotGlow {
+            0% {
+                opacity: 0.2;
+                filter: drop-shadow(0 0 2px #ffd700) brightness(1);
+            }
+            50% {
+                opacity: 1;
+                filter: drop-shadow(0 0 12px #ffff00) brightness(1.6);
+            }
+            100% {
+                opacity: 0.2;
+                filter: drop-shadow(0 0 2px #ffd700) brightness(1);
+            }
+        }
+        /* 당첨 시 추가되는 활성화 클래스 */
+        .jackpot-line.active {
+            display: block; /* 화면에 표시 */
+            animation: jackpotGlow 0.6s infinite ease-in-out; /* 0.6초 주기로 계속 깜빡임 */
+        }
+                
+        .symbol-strip {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transform: translateY(0px);    /* ↕️ 심볼 미세 높낮이 조절 (px 단위) */
+        }
+        .symbol-strip img {
+            width: 63%;           /* 🔍 가로 크기 비율 */
+            height: auto; 
+            max-height: 63%;      /* 🔍 세로 최대 높이 비율 */
+            object-fit: contain;
+        }
+
+        /* 하단 바 */
+        .bottom-bar {
+            position: absolute; 
+            bottom: var(--bottom-bar-bottom); 
+            width: 100%; 
+            height: 10%; 
+            z-index: 10;
+        }
+        .bet-text {
+            position: absolute; 
+            left: 5%; 
+            top: 60%; 
+            transform: translateY(-50%);
+            color: white; 
+            font-weight: bold; 
+            font-size: 1.5vh; /* ⬅️ cqw 대신 2.2vh 로 수정 */
+            z-index: 11;
+        }
+        .ui-element { 
+            position: absolute; 
+            cursor: pointer; 
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        /* 푸터 중앙 WIN 표시 영역 위치 및 스타일 */
+        .win-box {
+            position: absolute;
+            left: 44%;                    /* ↔️ 가로 정중앙 기준점 */
+            top: 60%;                     /* ↕️ 세로 정중앙 기준점 */
+            transform: translate(-50%, -50%); /* 정확히 정중앙에 고정 */
+    
+            display: flex;
+            flex-direction: column;       /* WIN 글자 아래에 금액이 오도록 위아래 배치 */
+            align-items: center;
+            justify-content: center;
+    
+            width: 30%;                   /* 표시 영역 가로 폭 */
+            text-align: center;
+            z-index: 11;
+        }
+        /* "WIN" 라벨 글자 크기 */
+        .win-label {
+            color: var(--primary-gold);
+            font-size: 1.7vh;              /* ⬅️ cqw 대신 2.6vh 로 수정 */
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        /* 당첨 금액 숫자 크기 */
+        .win-amount {
+            color: #ffffff;
+            font-size: 2.1vh;              /* ⬅️ cqw 대신 2.8vh 로 수정 */
+            font-weight: bold;
+            text-shadow: 1px 1px 3px #000;
+            margin-top: 1px;
+        }
+        .btn-auto { 
+            top: 61%;
+            right: 24%; 
+            width: 10.5%;
+            transition: transform 0.08s ease, filter 0.08s ease; /* 딸깍 모션 부드럽게 추가 */
+        }
+        .btn-spin { 
+            top: 54%;
+            right: 2%; 
+            width: 18%;
+            transition: transform 0.08s ease, filter 0.08s ease; /* 딸깍 모션 부드럽게 추가 */
+        }
+        .btn-auto img, .btn-spin img { 
+            width: 100%; 
+            height: auto; 
+            display: block; 
+        }
+        /* 버튼을 누르고 있을 때 '딸깍' 눌리는 애니메이션 */
+        .btn-spin:active,
+        .btn-auto:active {
+            transform: translateY(calc(-50% + 2px)) scale(0.92);
+            filter: brightness(0.85);
+        }
+
+        /* 1. 오토 스핀 횟수 선택 메뉴 팝업 */
+        .auto-menu {
+            position: absolute;
+            bottom: 95%;                            /* 버튼 바로 윗방향으로 뜸 */
+            right: 20%;                             /* 오토 버튼 바로 위 위치 */
+            width: 80px;                            /* 메뉴 가로 너비 지정 */
+            background: rgba(15, 15, 15, 0.95);
+            border: 2px solid var(--primary-gold);
+            border-radius: 8px;
+            padding: 6px;
+            display: none;                          /* 평소에는 숨김 */
+            flex-direction: column;
+            gap: 6px;
+            z-index: 100;                           /* 다른 모든 요소보다 위에 표시 */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+        /* 메뉴 열림 클래스 */
+        .auto-menu.show {
+            display: flex !important;
+        }
+        /* 메뉴 안의 각 버튼 선택 항목 */
+        .auto-option {
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            background: #2a2a2a;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        /* 항목 마우스 오버 / 터치 시 */
+        .auto-option:hover, .auto-option:active {
+            background: var(--primary-gold);
+            color: #000000;
+        }
+
+        /* 2. 오토 스핀 실행 중일 때 버튼 강조 및 색상 변환 */
+        .btn-auto.active {
+            filter: hue-rotate(140deg) brightness(1.2) drop-shadow(0 0 8px #ff3300); /* 붉은 계열로 색상 반전 및 빛남 */
+            animation: pulseAuto 1s infinite alternate ease-in-out;
+        }
+        @keyframes pulseAuto {
+            0% { transform: translateY(-50%) scale(1); }
+            100% { transform: translateY(-50%) scale(1.06); }
+        }
+        /*  =========================================
+            📱 사이드 메뉴 드로어 스타일
+            ========================================= */
+        /* 배경 어둡게 처리 */
+        .menu-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .menu-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 우측에서 스르륵 열리는 메뉴 서랍 */
+        .side-drawer {
+            position: absolute;
+            top: 0; right: -75%; /* 평소에는 오른쪽 바깥으로 숨김 */
+            width: 70%;
+            height: 100%;
+            background: linear-gradient(180deg, #0b1528 0%, #050b14 100%);
+            border-left: 2px solid var(--primary-gold);
+            box-shadow: -5px 0 25px rgba(0, 0, 0, 0.8);
+            z-index: 210;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+            overflow-y: auto;
+        }
+        .side-drawer.show {
+            right: 0; /* 열릴 때 화면 우측 안으로 슬라이드 */
+        }
+
+        /* 메뉴 헤더 */
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 16px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .drawer-title {
+            color: var(--primary-gold);
+            font-weight: bold;
+            font-size: 16px;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
+        }
+        .btn-close {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: transform 0.15s ease, color 0.15s ease;
+        }
+        .btn-close:active {
+            transform: scale(0.85);
+            color: var(--primary-gold);
+        }
+
+        /* 10가지 메뉴 목록 리스트 */
+        .drawer-menu-list {
+            list-style: none;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #e0e6ed;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .menu-item:active {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: var(--primary-gold);
+            transform: scale(0.97);
+        }
+        .menu-icon {
+            font-size: 15px;
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+        .menu-text {
+            flex-grow: 1;
+        }
+
+        /* 특수 메뉴 스타일링 */
+        .menu-item.highlight {
+            border-color: rgba(255, 215, 0, 0.4);
+            color: var(--primary-gold);
+            font-weight: bold;
+        }
+        .sound-status {
+            font-size: 11px;
+            padding: 2px 6px;
+            background: #2a6f3b;
+            color: #fff;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .sound-status.off {
+            background: #666;
+            color: #bbb;
+        }
+        .menu-item.danger-subtle {
+            color: #ff8585;
+            font-size: 12px;
+            border-color: rgba(255, 77, 77, 0.2);
+            margin-top: 6px;
+        }
+        .menu-item.exit-btn {
+            background: #7a1414;
+            color: #fff;
+            font-weight: bold;
+            border: 1px solid #ff4d4d;
+            margin-top: 4px;
+        }
+
+        /* QR 코드 항목 전용 스타일 */
+        .menu-item.qr-item {
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 10px;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        .qr-box {
+            background: #fff;
+            padding: 6px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+        .qr-box img {
+            width: 75px;
+            height: 75px;
+            display: block;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="background"></div>
+        <div id="bubble-container"></div>
+
+        <header class="top-bar">
+            <!-- CREDIT-box 이름표 달아주기 -->
+            <div class="header-box credit-box">
+                <div class="text-val">10,000 GP</div>
+            </div>
+            
+            <!-- 칩 전용 chip-box 이름표 달아주기 -->
+            <div class="header-box chip-box">
+                <div class="text-val">0</div>
+            </div>
+            <img src="assets/btn_menu.png" class="btn-menu">
+        </header>
+
+        <div class="multiplier-window" id="multiplier-window">
+            <div class="multiplier-strip" id="multiplier-strip">
+                <!-- JS에서 배당 이미지들이 삽입됩니다 -->
+            </div>
+        </div>
+
+        <div class="reels-container">
+            <div class="reel"><div class="symbol-strip" id="reel1-strip"></div></div>
+            <div class="reel"><div class="symbol-strip" id="reel2-strip"></div></div>
+            <div class="reel"><div class="symbol-strip" id="reel3-strip"></div></div>
+            <img src="assets/jackpot line.png" class="jackpot-line" id="jackpot-line" alt="Jackpot Line">
+        </div>
+
+        <footer class="bottom-bar">
+            <div class="bet-text">BET 100GP</div>
+            <div class="win-box" id="win-display">
+                <span class="win-label">WIN</span>
+                <span class="win-amount" id="win-amount">0</span>
+            </div>
+
+            <!-- 오토 스핀 메뉴 팝업 -->
+            <div class="auto-menu" id="auto-menu">
+                <div class="auto-option" data-count="50">50</div>
+                <div class="auto-option" data-count="100">100</div>
+                <div class="auto-option" data-count="500">500</div>
+                <div class="auto-option" data-count="Infinity">FREE</div>
+            </div>
+
+            <!-- 하단 버튼들 -->
+            <div class="ui-element btn-auto" id="btn-auto"><img src="assets/btn_autospin.png"></div>
+            <div class="ui-element btn-spin" id="btn-spin"><img src="assets/btn_spin.png"></div>
+        </footer>
+            
+            <div class="menu-overlay" id="menu-overlay"></div>
+            <aside class="side-drawer" id="side-drawer">
+                <div class="drawer-header">
+                    <span class="drawer-title">GAME MENU</span>
+                    <button class="btn-close" id="btn-menu-close">✕</button>
+                </div>
+                <ul class="drawer-menu-list">
+                    <li class="menu-item" data-action="login">
+                        <span class="menu-icon">🔑</span>
+                        <span class="menu-text">Login</span>
+                    </li>
+                    <li class="menu-item highlight" data-action="free-recharge">
+                        <span class="menu-icon">🎁</span>
+                        <span class="menu-text">Free Recharge</span>
+                    </li>
+                    <li class="menu-item" data-action="deposit">
+                        <span class="menu-icon">💰</span>
+                        <span class="menu-text">Deposit</span>
+                    </li>
+                    <li class="menu-item" data-action="withdrawal">
+                        <span class="menu-icon">💳</span>
+                        <span class="menu-text">Withdrawal</span>
+                    </li>
+                    <li class="menu-item" data-action="sound" id="menu-sound-toggle">
+                        <span class="menu-icon">🔊</span>
+                        <span class="menu-text">Sound</span>
+                        <span class="sound-status" id="sound-status-text">ON</span>
+                    </li>
+                    <li class="menu-item" data-action="join">
+                        <span class="menu-icon">📝</span>
+                        <span class="menu-text">Join Membership</span>
+                    </li>
+                    <li class="menu-item" data-action="share">
+                        <span class="menu-icon">📲</span>
+                        <span class="menu-text">Share App</span>
+                    </li>
+                    <li class="menu-item qr-item" data-action="qr-access">
+                        <span class="menu-text">Game Access QR</span>
+                        <div class="qr-box">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://magic-oceans-game.com" alt="Game Access QR">
+                        </div>
+                    </li>
+                    <li class="menu-item danger-subtle" data-action="leave-membership">
+                        <span class="menu-icon">⚠️</span>
+                        <span class="menu-text">Membership Withdrawal</span>
+                    </li>
+                    <li class="menu-item exit-btn" data-action="exit">
+                        <span class="menu-icon">🚪</span>
+                        <span class="menu-text">Exit</span>
+                    </li>
+                </ul>
+            </aside>
+                        
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // ⬇️ [물방울 생성 로직 추가] ⬇️
+            function createBubble() {
+                const container = document.getElementById('bubble-container');
+                if (!container) return;
+
+                const bubble = document.createElement('div');
+                
+                // 1. 랜덤 크기 선택
+                const sizes = ['bubble-small', 'bubble-medium', 'bubble-large'];
+                const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+                bubble.classList.add('bubble', randomSize);
+
+                // 2. 가로 시작 위치 랜덤 (5% ~ 95%)
+                bubble.style.left = (Math.random() * 90 + 5) + '%';
+
+                // ⬇️ [수정됨] 올라가는 시간을 8초 ~ 13초 사이로 늘려 속도를 천천히 늦춤
+                const duration = Math.random() * 5 + 8;
+                bubble.style.animationDuration = duration + 's';
+
+                container.appendChild(bubble);
+
+                // 애니메이션 종료 후 요소 제거 (수정된 시간에 맞춤)
+                setTimeout(() => {
+                    bubble.remove();
+                }, duration * 1000);
+            }
+
+            // 10초(10000ms)마다 물방울 생성
+            setInterval(() => {
+                // 10초마다 1개~3개의 물방울이 랜덤하게 발생
+                const bubbleCount = Math.floor(Math.random() * 3) + 1; 
+                for (let i = 0; i < bubbleCount; i++) {
+                    // 여러 개가 동시에 나오지 않고 약간의 시차를 두고 올라오게 설정
+                    setTimeout(createBubble, Math.random() * 2000);
+                }
+            }, 10000); 
+
+            // 화면을 처음 켰을 때 심심하지 않게 바로 하나 띄워주기
+            createBubble();
+            
+            
+            // 1. 당첨금 테스트 표시
+            const winScore = 5000;
+            const winElement = document.getElementById('win-amount');
+            if (winElement) {
+                winElement.textContent = winScore.toLocaleString(); // "5,000" 으로 표시됨
+            }
+
+            // 2. 당첨 라인 표시 (필요 시 주석 해제)
+            // const jackpotLine = document.getElementById('jackpot-line');
+            // if (jackpotLine) jackpotLine.classList.add('active');
+
+            // 3. 배당릴 안전 생성 (파일명 확인: mult_x1.png ~ mult_x6.png)
+            const multStrip = document.getElementById('multiplier-strip');
+            if (multStrip) {
+                multStrip.innerHTML = ''; // 기존 내용 비우기
+                for (let i = 0; i < 20; i++) {
+                    const img = document.createElement('img');
+                    const multNum = (i % 6) + 1;
+                    img.src = `assets/mult_x${multNum}.png`;
+                    
+                    // 이미지 로드 실패 시 대체 처리 (깨진 엑박 방지)
+                    img.onerror = function() {
+                        this.src = `assets/mult_x1.png`; // 실패 시 x1 기본 이미지로 대체
+                    };
+                    multStrip.appendChild(img);
+                }
+            }
+
+            // 4. 심볼 릴 안전 생성 (1~12번 중 존재하는 심볼만 매칭)
+            const symbolCount = 12; // 실제 가지고 계신 심볼 개수
+            ['reel1-strip', 'reel2-strip', 'reel3-strip'].forEach(id => {
+                const strip = document.getElementById(id);
+                if (strip) {
+                    strip.innerHTML = ''; // 기존 내용 비우기
+                    const img = document.createElement('img');
+                    const randNum = Math.floor(Math.random() * symbolCount) + 1;
+                    
+                    // 2자리(01, 02) 및 1자리(1, 2) 파일명 모두 대응
+                    img.src = `assets/sym_${String(randNum).padStart(2, '0')}.png`;
+                    
+                    // 만약 2자리 이름(sym_01.png)이 없으면 1자리 이름(sym_1.png)으로 재시도
+                    img.onerror = function() {
+                        this.src = `assets/sym_01.png`; // 기본 심볼로 안전 복구
+                    };
+                    
+                    strip.appendChild(img);
+                }
+            });
+
+            // 5. 오토 스핀 메뉴 이벤트 및 즉시 실행 연결
+            const btnAuto = document.getElementById('btn-auto');
+            const autoMenu = document.getElementById('auto-menu');
+            const autoOptions = document.querySelectorAll('.auto-option');
+
+            if (btnAuto && autoMenu) {
+                btnAuto.addEventListener('click', (e) => {
+                    e.stopPropagation();
+
+                    // 실행 중일 때 다시 누르면: 즉시 정지
+                    if (window.isAutoSpinning) {
+                        if (typeof window.stopAutoSpin === 'function') {
+                            window.stopAutoSpin();
+                        }
+                    } else {
+                        // 대기 중일 때 누르면: 메뉴 열기/닫기 토글
+                        autoMenu.classList.toggle('show');
+                    }
+                });
+            }
+
+            // 횟수(50, 100, 500, FREE) 클릭 시 알림창 없이 '즉시' 자동 스핀 시작
+            autoOptions.forEach(opt => {
+                opt.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const countVal = opt.getAttribute('data-count');
+                    
+                    // 메뉴 닫기
+                    if (autoMenu) autoMenu.classList.remove('show');
+
+                    // 횟수 파싱 (FREE는 무한대로 설정)
+                    const count = (countVal === 'Infinity') ? Infinity : parseInt(countVal, 10);
+                    
+                    // 🚀 알림창 없이 바로 오토 스핀 함수 호출!
+                    if (typeof window.startAutoSpin === 'function') {
+                        window.startAutoSpin(count);
+                    }
+                });
+            });
+
+            // 화면 빈 공간 클릭 시 메뉴 닫기
+            document.addEventListener('click', () => {
+                if (autoMenu) autoMenu.classList.remove('show');
+            });
+            const btnMenu = document.querySelector('.btn-menu');
+            const sideDrawer = document.getElementById('side-drawer');
+            const menuOverlay = document.getElementById('menu-overlay');
+            const btnMenuClose = document.getElementById('btn-menu-close');
+
+            function openMenu() {
+                if (sideDrawer && menuOverlay) {
+                    sideDrawer.classList.add('show');
+                    menuOverlay.classList.add('show');
+                }
+            }
+
+            function closeMenu() {
+                if (sideDrawer && menuOverlay) {
+                    sideDrawer.classList.remove('show');
+                    menuOverlay.classList.remove('show');
+                }
+            }
+
+            if (btnMenu) btnMenu.addEventListener('click', openMenu);
+            if (btnMenuClose) btnMenuClose.addEventListener('click', closeMenu);
+            if (menuOverlay) menuOverlay.addEventListener('click', closeMenu);
+
+            let isSoundOn = true;
+
+            document.querySelectorAll('.drawer-menu-list .menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const action = item.getAttribute('data-action');
+                    
+                    if (action === 'sound') {
+                        window.isSoundOn = (window.isSoundOn !== undefined) ? !window.isSoundOn : false;
+                        const soundText = document.getElementById('sound-status-text');
+                        if (soundText) {
+                            soundText.textContent = window.isSoundOn ? 'ON' : 'OFF';
+                            soundText.classList.toggle('off', !window.isSoundOn);
+                        }
+                        if (!window.isSoundOn && typeof stopSpinSound === 'function') {
+                            stopSpinSound();
+                        }
+                        return;
+                    }
+
+                    if (action === 'share') {
+                        if (navigator.share) {
+                            navigator.share({
+                                title: 'Magic Oceans Slot',
+                                text: 'Play the Magic Oceans Slot Game now!',
+                                url: window.location.href
+                            }).catch(() => {});
+                        } else {
+                            alert('Game URL copied to clipboard! (App Sharing)');
+                        }
+                        closeMenu();
+                        return;
+                    }
+
+                    switch (action) {
+                        case 'login': alert('[Login] Please enter your credentials.'); break;
+                        case 'free-recharge': alert('[Free Recharge] Daily free credits granted!'); break;
+                        case 'deposit': alert('[Deposit] Redirecting to deposit window...'); break;
+                        case 'withdrawal': alert('[Withdrawal] Redirecting to payout window...'); break;
+                        case 'join': alert('[Join Membership] Welcome to Magic Oceans!'); break;
+                        case 'leave-membership':
+                            if (confirm('Are you sure you want to withdraw your membership?')) {
+                                alert('Membership withdrawn successfully.');
+                            }
+                            break;
+                        case 'exit':
+                            if (confirm('Do you want to exit the game?')) {
+                                window.close();
+                            }
+                            break;
+                    }
+                    closeMenu();
+                });
+            });
+        });
+    </script>
