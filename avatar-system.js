@@ -281,11 +281,30 @@
             this.btnCloseStore = document.getElementById('btn-store-close');
             this.btnCloseCommunity = document.getElementById('btn-community-close');
 
-            // G코인 환전기 요소
+            // 💱 중앙 환전소 듀얼 탭 요소
+            this.tabBtnDeposit = document.getElementById('tab-btn-deposit');
+            this.tabBtnWithdraw = document.getElementById('tab-btn-withdraw');
+            this.paneGexDeposit = document.getElementById('pane-gex-deposit');
+            this.paneGexWithdraw = document.getElementById('pane-gex-withdraw');
+
+            // 탭 1: 자산 예치 (SP ➔ G)
             this.gexCurrentSp = document.getElementById('gex-current-sp');
             this.gexMaxGcoin = document.getElementById('gex-max-gcoin');
             this.btnGexHalf = document.getElementById('btn-gex-half');
             this.btnGexAll = document.getElementById('btn-gex-all');
+            this.inputGexDepositSp = document.getElementById('input-gex-deposit-sp');
+            this.btnGexDepositSubmit = document.getElementById('btn-gex-deposit-submit');
+
+            // 탭 2: 비상금 환전 (G ➔ SP)
+            this.gexWithdrawCurGcoin = document.getElementById('gex-withdraw-cur-gcoin');
+            this.gexWithdrawEstSp = document.getElementById('gex-withdraw-est-sp');
+            this.btnWithdraw10g = document.getElementById('btn-withdraw-10g');
+            this.btnWithdraw50g = document.getElementById('btn-withdraw-50g');
+            this.btnWithdrawAll = document.getElementById('btn-withdraw-all');
+            this.labelWithdrawAllDesc = document.getElementById('label-withdraw-all-desc');
+            this.inputWithdrawGcoin = document.getElementById('input-withdraw-gcoin');
+            this.btnWithdrawSubmit = document.getElementById('btn-withdraw-submit');
+            this.previewCalcText = document.getElementById('preview-calc-text');
 
             // 대시보드 뷰어
             this.myBgPreview = document.getElementById('my-bg-preview');
@@ -367,12 +386,38 @@
                 }
             });
 
-            // 4. SP ➔ G코인 원터치 환전 이벤트 (10,000 SP = 1 G코인)
+            // 4. 💱 중앙 환전소 듀얼 탭 & 금융 이벤트 바인딩
+            if (this.tabBtnDeposit && this.tabBtnWithdraw) {
+                this.tabBtnDeposit.addEventListener('click', () => this.switchExchangeTab('deposit'));
+                this.tabBtnWithdraw.addEventListener('click', () => this.switchExchangeTab('withdraw'));
+            }
+
+            // 4-1. [자산 예치] SP ➔ G코인
             if (this.btnGexHalf) {
                 this.btnGexHalf.addEventListener('click', () => this.executeGcoinExchange(0.5));
             }
             if (this.btnGexAll) {
                 this.btnGexAll.addEventListener('click', () => this.executeGcoinExchange(1.0));
+            }
+            if (this.btnGexDepositSubmit) {
+                this.btnGexDepositSubmit.addEventListener('click', () => this.executeDepositAmount());
+            }
+
+            // 4-2. [비상금 환전] G코인 ➔ SP (대표님 지정 100회/500회 공식 준수)
+            if (this.btnWithdraw10g) {
+                this.btnWithdraw10g.addEventListener('click', () => this.executeSpWithdrawal(10));
+            }
+            if (this.btnWithdraw50g) {
+                this.btnWithdraw50g.addEventListener('click', () => this.executeSpWithdrawal(50));
+            }
+            if (this.btnWithdrawAll) {
+                this.btnWithdrawAll.addEventListener('click', () => this.executeSpWithdrawal(this.profile.state.gcoin));
+            }
+            if (this.btnWithdrawSubmit) {
+                this.btnWithdrawSubmit.addEventListener('click', () => this.executeCustomWithdrawal());
+            }
+            if (this.inputWithdrawGcoin) {
+                this.inputWithdrawGcoin.addEventListener('input', () => this.updateWithdrawPreview());
             }
 
             // 5. 상점 카테고리 탭 전환
@@ -451,37 +496,236 @@
             return 0;
         }
 
+        switchExchangeTab(tab) {
+            if (!this.tabBtnDeposit || !this.tabBtnWithdraw || !this.paneGexDeposit || !this.paneGexWithdraw) return;
+
+            if (tab === 'deposit') {
+                this.tabBtnDeposit.classList.add('active');
+                this.tabBtnWithdraw.classList.remove('active');
+                this.paneGexDeposit.style.display = 'flex';
+                this.paneGexWithdraw.style.display = 'none';
+            } else {
+                this.tabBtnDeposit.classList.remove('active');
+                this.tabBtnWithdraw.classList.add('active');
+                this.paneGexDeposit.style.display = 'none';
+                this.paneGexWithdraw.style.display = 'flex';
+                this.updateWithdrawPreview();
+            }
+        }
+
+        showDialog(opts) {
+            if (typeof window !== 'undefined' && typeof window.showOceanDialog === 'function') {
+                return window.showOceanDialog(opts);
+            }
+            alert(`${opts.title || '알림'}\n${opts.message || ''}`);
+            return Promise.resolve(true);
+        }
+
         executeGcoinExchange(ratio) {
             const currentSp = this.getCurrentSpBalance();
             if (currentSp < 10000) {
-                alert('⚠️ 최소 10,000 SP 이상 보유 시에만 1 G코인으로 교환할 수 있습니다.');
+                this.showDialog({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: '예치 기준 미달',
+                    message: '최소 10,000 SP 이상 보유 시에만 1 G-Coin으로 예치할 수 있습니다.',
+                    infoRows: [
+                        { label: '🪙 현재 보유 당첨금', value: `${currentSp.toLocaleString()} SP`, highlight: 'sp' },
+                        { label: '⚡ 최소 예치 단위', value: '10,000 SP = 1 G', highlight: 'gold' }
+                    ],
+                    confirmText: '확인'
+                });
                 return;
             }
 
             const targetSp = Math.floor((currentSp * ratio) / 10000) * 10000;
             if (targetSp <= 0) {
-                alert('⚠️ 교환 가능한 최소 수량(10,000 SP)에 미달합니다.');
+                this.showDialog({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: '예치 수량 부족',
+                    message: '예치 가능한 최소 수량(10,000 SP)에 미달합니다.',
+                    confirmText: '확인'
+                });
                 return;
             }
 
             const earnedGcoin = Math.floor(targetSp / 10000);
 
-            // Chip 차감 반영
-            const chipEl = document.getElementById('chip-val');
-            if (chipEl) {
-                const newChip = currentSp - targetSp;
-                chipEl.textContent = newChip.toLocaleString() + ' SP';
-            }
+            // 1. 코어 엔진과 SP 잔액 안전 동기화
+            window.dispatchEvent(new CustomEvent('magic-oceans:sync-chip', {
+                detail: { delta: -targetSp }
+            }));
 
-            // G코인 증가 및 저장
+            // 2. G코인 증가 및 영구 저장
             this.profile.state.gcoin += earnedGcoin;
             this.profile.saveState();
 
-            // UI 갱신
+            // 3. UI 갱신
             this.renderMyDashboard();
             this.updateStoreWallet();
 
-            alert(`🎉 교환 완료!\n${targetSp.toLocaleString()} SP ➔ ${earnedGcoin} G-Coin 획득!`);
+            this.showDialog({
+                type: 'success',
+                icon: '🎉',
+                title: '자산 예치 완료',
+                message: '보유 당첨금이 안전한 G-Coin 자산으로 예치되었습니다!',
+                infoRows: [
+                    { label: '💰 예치된 당첨금', value: `${targetSp.toLocaleString()} SP`, highlight: 'sp' },
+                    { label: '🪙 획득한 G-Coin', value: `+${earnedGcoin.toLocaleString()} G`, highlight: 'gold' }
+                ],
+                subTip: '🛍️ 보유 G-Coin으로 럭셔리 부티크 상점에서 쇼핑을 즐겨보세요!',
+                confirmText: '확인'
+            });
+        }
+
+        executeDepositAmount() {
+            if (!this.inputGexDepositSp) return;
+            const inputVal = parseInt(this.inputGexDepositSp.value, 10);
+            if (isNaN(inputVal) || inputVal < 10000) {
+                this.showDialog({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: '예치 수량 오류',
+                    message: '최소 10,000 SP 이상의 수량을 입력해주세요. (10,000 단위)',
+                    confirmText: '확인'
+                });
+                return;
+            }
+
+            const currentSp = this.getCurrentSpBalance();
+            if (inputVal > currentSp) {
+                this.showDialog({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: '보유 잔액 초과',
+                    message: `보유 중인 당첨금(${currentSp.toLocaleString()} SP)을 초과할 수 없습니다.`,
+                    confirmText: '확인'
+                });
+                return;
+            }
+
+            const targetSp = Math.floor(inputVal / 10000) * 10000;
+            const earnedGcoin = Math.floor(targetSp / 10000);
+
+            window.dispatchEvent(new CustomEvent('magic-oceans:sync-chip', {
+                detail: { delta: -targetSp }
+            }));
+
+            this.profile.state.gcoin += earnedGcoin;
+            this.profile.saveState();
+            this.inputGexDepositSp.value = '';
+
+            this.renderMyDashboard();
+            this.updateStoreWallet();
+
+            this.showDialog({
+                type: 'success',
+                icon: '🎉',
+                title: '자산 예치 완료',
+                message: '보유 당첨금이 G-Coin 자산으로 예치되었습니다!',
+                infoRows: [
+                    { label: '💰 예치된 당첨금', value: `${targetSp.toLocaleString()} SP`, highlight: 'sp' },
+                    { label: '🪙 획득한 G-Coin', value: `+${earnedGcoin.toLocaleString()} G`, highlight: 'gold' }
+                ],
+                confirmText: '확인'
+            });
+        }
+
+        // ==========================================
+        // 5-1. 🚨 G코인 ➔ SP 비상금 환전 로직 (1 G = 10,000 SP = 슬롯 10회)
+        // [대표님 확정 공식] 10 G = 10만 SP = 100회 스핀 / 50 G = 50만 SP = 500회 스핀
+        // ==========================================
+        async executeSpWithdrawal(gcoinCount) {
+            gcoinCount = Math.floor(gcoinCount);
+            if (isNaN(gcoinCount) || gcoinCount <= 0) {
+                this.showDialog({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: '환전 수량 오류',
+                    message: '최소 1 G-Coin 이상 환전할 수 있습니다.',
+                    confirmText: '확인'
+                });
+                return;
+            }
+
+            const curGcoin = this.profile.state.gcoin;
+            if (curGcoin < gcoinCount) {
+                this.showDialog({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: 'G-Coin 잔액 부족',
+                    message: `보유 중인 G-Coin(${curGcoin.toLocaleString()} G)이 부족합니다.`,
+                    confirmText: '확인'
+                });
+                return;
+            }
+
+            const earnedSp = gcoinCount * 10000;
+            const spinCount = Math.floor(earnedSp / 1000); // 1회 기본 베팅 1,000 기준
+
+            // 1. G-Coin 차감 및 영구 저장
+            this.profile.state.gcoin -= gcoinCount;
+            this.profile.saveState();
+
+            // 2. 코어 엔진과 SP 잔액 안전 가산 동기화
+            window.dispatchEvent(new CustomEvent('magic-oceans:sync-chip', {
+                detail: { delta: earnedSp }
+            }));
+
+            // 3. UI 갱신
+            this.renderMyDashboard();
+            this.updateStoreWallet();
+
+            // 4. 즉시 슬롯 연료(Credit Point) 전환 연동 다이얼로그 (프리미엄 2버튼)
+            const toCredit = await this.showDialog({
+                type: 'success',
+                icon: '⚡',
+                title: '비상금 환전 성공!',
+                message: 'G-Coin이 잭팟 당첨금(SP)으로 안전하게 환전되었습니다!',
+                infoRows: [
+                    { label: '🪙 환전된 자산', value: `${gcoinCount.toLocaleString()} G-Coin`, highlight: 'gold' },
+                    { label: '💰 획득 당첨금', value: `+${earnedSp.toLocaleString()} SP`, highlight: 'sp' },
+                    { label: '⚡ 확보된 스핀', value: `${spinCount.toLocaleString()}회 분량`, highlight: 'gold' }
+                ],
+                subTip: '🎰 지금 즉시 이 SP를 슬롯 크레딧(Point)으로 전환하여 바로 릴을 돌리시겠습니까?',
+                confirmText: '크레딧 전환 후 릴 회전',
+                cancelText: 'SP 지갑에 보관'
+            });
+
+            if (toCredit) {
+                window.dispatchEvent(new CustomEvent('magic-oceans:sp-to-credit', {
+                    detail: { amount: earnedSp }
+                }));
+                this.closeModal(this.modalMyAvatar);
+            }
+        }
+
+        executeCustomWithdrawal() {
+            if (!this.inputWithdrawGcoin) return;
+            const count = parseInt(this.inputWithdrawGcoin.value, 10);
+            if (isNaN(count) || count <= 0) {
+                this.showDialog({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: '수량 입력 오류',
+                    message: '환전할 G-Coin 수량을 정확히 입력해주세요.',
+                    confirmText: '확인'
+                });
+                return;
+            }
+            this.executeSpWithdrawal(count);
+            this.inputWithdrawGcoin.value = '';
+        }
+
+        updateWithdrawPreview() {
+            if (!this.previewCalcText) return;
+            let val = this.inputWithdrawGcoin ? parseInt(this.inputWithdrawGcoin.value, 10) : 1;
+            if (isNaN(val) || val <= 0) val = 1;
+
+            const estSp = val * 10000;
+            const estSpins = val * 10; // 1 G = 10,000 SP = 10회 스핀, 10 G = 100회, 50 G = 500회
+            this.previewCalcText.textContent = `${val.toLocaleString()} G-Coin 환전 시 ${estSp.toLocaleString()} SP (슬롯 ${estSpins.toLocaleString()}회 스핀)를 확보합니다. ⚡`;
         }
 
         // ==========================================
@@ -556,9 +800,19 @@
             const st = this.profile.state;
             const currentSp = this.getCurrentSpBalance();
 
-            // 환전기 정보 갱신
+            // 탭 1 (예치) 정보 갱신
             if (this.gexCurrentSp) this.gexCurrentSp.textContent = currentSp.toLocaleString() + ' SP';
-            if (this.gexMaxGcoin) this.gexMaxGcoin.textContent = Math.floor(currentSp / 10000) + ' G';
+            if (this.gexMaxGcoin) this.gexMaxGcoin.textContent = Math.floor(currentSp / 10000).toLocaleString() + ' G';
+
+            // 탭 2 (비상금 환전) 정보 갱신
+            if (this.gexWithdrawCurGcoin) this.gexWithdrawCurGcoin.textContent = st.gcoin.toLocaleString() + ' G';
+            if (this.gexWithdrawEstSp) this.gexWithdrawEstSp.textContent = (st.gcoin * 10000).toLocaleString() + ' SP';
+            if (this.labelWithdrawAllDesc) {
+                const totalSp = st.gcoin * 10000;
+                const totalSpins = st.gcoin * 10; // 1 G = 10,000 SP = 10회 스핀
+                this.labelWithdrawAllDesc.textContent = `${totalSp.toLocaleString()} SP (${totalSpins.toLocaleString()}회)`;
+            }
+            this.updateWithdrawPreview();
 
             // 잔액 & 지수 갱신
             if (this.myGcoinVal) this.myGcoinVal.textContent = st.gcoin.toLocaleString() + ' G';

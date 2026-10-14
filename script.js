@@ -18,21 +18,144 @@
 class AudioManager {
     constructor() {
         this.isSoundOn = true;
-        this.soundSpin = new Audio('assets/ReelStart.wav');
-        this.soundStop = new Audio('assets/Reelstop.wav');
-        this.soundWin = new Audio('assets/hitbell.wav');
+        this.soundSpin = new Audio('assets/sounds/ReelStart.wav');
+        this.soundStop = new Audio('assets/sounds/Reelstop.wav');
+        this.soundWin = new Audio('assets/sounds/hitbell.wav');
+
+        // 💧 [대표님 지시] 평상시 대기(Idle) 물방울 앰비언스 사운드
+        this.soundAmbientWater = new Audio('assets/sounds/waterdrop.wav');
+        this.soundAmbientWater.preload = 'auto';
+        this.soundAmbientWater.volume = 0.28; // 은은하고 신비로운 해저 동굴 볼륨
+
+        this.ambientTimer = null;
+        this.isAmbientActive = false; // 대기 상태 앰비언스 활성화 플래그
+        this.isUnlocked = false;      // 브라우저 Autoplay 언락 플래그
 
         this.soundSpin.loop = true;
         this.soundSpin.preload = 'auto';
-        this.soundSpin.volume = 0.45; // 기존 0.56 대비 20% 추가 감소 (0.56 -> 0.45)
+        this.soundSpin.volume = 0.22; // [대표님 지시] 릴 회전음 50% 감쇠 (0.45 -> 0.22)
         this.soundStop.preload = 'auto';
         this.soundWin.preload = 'auto';
+        this.soundWin.volume = 0.85;
+
+        // 💧 물방울 사운드 재생 종료 시, 대기 상태라면 5~8초 불규칙 인터벌 후 다음 물방울 스케줄링
+        this.soundAmbientWater.addEventListener('ended', () => {
+            if (this.isAmbientActive && this.isSoundOn) {
+                this.scheduleNextWaterdrop();
+            }
+        });
+
+        // 🎵 [대표님 지정] 12종 심볼별 맞춤 당첨 사운드 맵
+        // 2번 조커: JokerNoHit.wav
+        // 6번 타겟: pang_0000.wav
+        // 1번 체리, 3번 조개 & 진주, 5번 불가사리: BONUS11.wav
+        // 7번, 8번, 9번 BAR 종류: laser.wav
+        // 11번("-") 다이아몬드, 12번("=") 스페이드 A: belt_itemreel.wav
+        // 4번 골든 벨, 10번 행운의 7: hitbell.wav (정통 타종음 보존)
+        const soundConfigs = {
+            'assets/sounds/BONUS11.wav': { volume: 0.9 },
+            'assets/sounds/JokerNoHit.wav': { volume: 0.85 },
+            'assets/sounds/hitbell.wav': { volume: 0.85 },
+            'assets/sounds/pang_0000.wav': { volume: 0.75 },
+            'assets/sounds/laser.wav': { volume: 0.95 },
+            'assets/sounds/belt_itemreel.wav': { volume: 1.0 }
+        };
+
+        this.audioCache = {};
+        for (const [path, cfg] of Object.entries(soundConfigs)) {
+            const audio = new Audio(path);
+            audio.preload = 'auto';
+            audio.volume = cfg.volume || 0.85;
+            this.audioCache[path] = audio;
+        }
+
+        this.symbolSoundMap = {
+            1: 'assets/sounds/BONUS11.wav',
+            2: 'assets/sounds/JokerNoHit.wav',
+            3: 'assets/sounds/BONUS11.wav',
+            4: 'assets/sounds/hitbell.wav',
+            5: 'assets/sounds/BONUS11.wav',
+            6: 'assets/sounds/pang_0000.wav',
+            7: 'assets/sounds/laser.wav',
+            8: 'assets/sounds/laser.wav',
+            9: 'assets/sounds/laser.wav',
+            10: 'assets/sounds/hitbell.wav',
+            11: 'assets/sounds/belt_itemreel.wav',
+            12: 'assets/sounds/belt_itemreel.wav'
+        };
+    }
+
+    // 💧 첫 유저 인터랙션 시 오디오 언락
+    unlockAudio() {
+        if (this.isUnlocked) return;
+        this.isUnlocked = true;
+        if (this.isAmbientActive && this.isSoundOn && !this.ambientTimer) {
+            this.scheduleNextWaterdrop(1500); // 첫 터치 후 1.5초 뒤 자연스러운 첫 물방울
+        }
+    }
+
+    // 💧 평상시 대기(Idle) 상태 진입 시 앰비언스 가동
+    startIdleAmbience() {
+        this.isAmbientActive = true;
+        if (!this.isSoundOn) return;
+        if (this.ambientTimer) return; // 이미 예약된 타이머가 있으면 중복 방지
+
+        // 대기 진입 시 2.5초 대기 후 첫 물방울, 이후 5~8초 불규칙 인터벌
+        this.scheduleNextWaterdrop(2500);
+    }
+
+    // 💧 릴 회전, 게임 진행, 오토스핀 시 앰비언스 즉시 전면 중지 (재생 절대 금지)
+    stopIdleAmbience() {
+        this.isAmbientActive = false;
+        if (this.ambientTimer) {
+            clearTimeout(this.ambientTimer);
+            this.ambientTimer = null;
+        }
+        try {
+            this.soundAmbientWater.pause();
+            this.soundAmbientWater.currentTime = 0;
+        } catch (e) {}
+    }
+
+    // 💧 5~8초 불규칙 인터벌 스케줄러 (대표님 지정 방안 A)
+    scheduleNextWaterdrop(customDelay = null) {
+        if (this.ambientTimer) {
+            clearTimeout(this.ambientTimer);
+            this.ambientTimer = null;
+        }
+        if (!this.isAmbientActive || !this.isSoundOn) return;
+
+        // 5초 ~ 8초 사이의 불규칙한(Random) 간격
+        const delay = (customDelay !== null) ? customDelay : (5000 + Math.random() * 3000);
+
+        this.ambientTimer = setTimeout(() => {
+            this.ambientTimer = null;
+            if (!this.isAmbientActive || !this.isSoundOn) return;
+
+            try {
+                this.soundAmbientWater.currentTime = 0;
+                const p = this.soundAmbientWater.play();
+                if (p !== undefined) {
+                    p.catch(() => {
+                        // 브라우저 정책으로 차단된 경우 대기 상태라면 4초 후 재시도
+                        if (this.isAmbientActive && this.isSoundOn) {
+                            this.scheduleNextWaterdrop(4000);
+                        }
+                    });
+                }
+            } catch (e) {}
+        }, delay);
     }
 
     setSound(enabled) {
         this.isSoundOn = enabled;
         if (!this.isSoundOn) {
             this.stopSpin();
+            this.stopIdleAmbience();
+        } else {
+            if (this.isAmbientActive) {
+                this.startIdleAmbience();
+            }
         }
     }
 
@@ -45,7 +168,7 @@ class AudioManager {
         if (!this.isSoundOn) return;
         try {
             this.soundSpin.currentTime = 0;
-            this.soundSpin.volume = 0.45; // 기존 0.56에서 20% 추가 감소
+            this.soundSpin.volume = 0.22;
             this.soundSpin.play().catch(() => {});
         } catch (e) {}
     }
@@ -73,11 +196,16 @@ class AudioManager {
         }
     }
 
-    playWin() {
+    playWin(symbolId = null) {
         if (!this.isSoundOn) return;
         try {
-            this.soundWin.currentTime = 0;
-            this.soundWin.play().catch(() => {});
+            const path = (symbolId && this.symbolSoundMap[symbolId])
+                ? this.symbolSoundMap[symbolId]
+                : 'assets/sounds/hitbell.wav';
+            const sound = this.audioCache[path] || this.soundWin;
+
+            sound.currentTime = 0;
+            sound.play().catch(() => {});
         } catch (e) {}
     }
 }
@@ -168,8 +296,10 @@ class GameEconomy {
     }
 
     exchangeChipToCredit(amount = null) {
-        const targetAmount = (amount === null || isNaN(amount)) ? this.chip : Math.min(amount, this.chip);
-        if (targetAmount <= 0) return 0;
+        let targetAmount = (amount === null || isNaN(amount)) ? this.chip : Math.min(amount, this.chip);
+        // 🔒 [대표님 절대 헌법] 환전은 무조건 1,000 SP 단위로만 환전 (1,000 SP 미만 환전 불가)
+        targetAmount = Math.floor(targetAmount / 1000) * 1000;
+        if (targetAmount < 1000) return 0;
         this.chip -= targetAmount;
         this.credit += targetAmount; // 1:1 환전
         return targetAmount;
@@ -185,7 +315,7 @@ class SlotMachine {
         this.secretEngine = (typeof window !== 'undefined' && window.__JackpotSecretEngine) 
             ? window.__JackpotSecretEngine 
             : null;
-        this.multipliers = this.secretEngine ? this.secretEngine.multipliers : [1, 2, 3, 4, 5, 10];
+        this.multipliers = this.secretEngine ? this.secretEngine.multipliers : [1, 2, 3, 4, 5, 10, 20, 30, 50, 100];
     }
 
     generateSpinResult(betAmount) {
@@ -223,13 +353,25 @@ class GameUI {
         this.menuOverlay = document.getElementById('menu-overlay');
         this.soundStatusText = document.getElementById('sound-status-text');
 
+        // 🌊 범용 시스템 알림 다이얼로그 요소 캐싱
+        this.dialogOverlay = document.getElementById('system-dialog-overlay');
+        this.dialogIconWrap = document.getElementById('dialog-icon-wrap');
+        this.dialogIcon = document.getElementById('dialog-icon');
+        this.dialogTitle = document.getElementById('dialog-title');
+        this.dialogMessage = document.getElementById('dialog-message');
+        this.dialogInfoBox = document.getElementById('dialog-info-box');
+        this.dialogSubTip = document.getElementById('dialog-sub-tip');
+        this.btnDialogConfirm = document.getElementById('btn-dialog-confirm');
+        this.btnDialogCancel = document.getElementById('btn-dialog-cancel');
+        this.dialogResolver = null;
+
         this.currentReelSymbols = [1, 1, 1];
         this.currentMultIndex = 0;
-        this.multipliersList = [1, 2, 3, 4, 5, 10];
+        this.multipliersList = [1, 2, 3, 4, 5, 10, 20, 30, 50, 100];
     }
 
     init(multipliers, onSpinClick, onAutoSelect, onAutoToggle, onMenuAction, onChipClick, onDrawerOpen, onDrawerClose, onExchangeSubmit) {
-        this.multipliersList = multipliers || [1, 2, 3, 4, 5, 10];
+        this.multipliersList = multipliers || [1, 2, 3, 4, 5, 10, 20, 30, 50, 100];
         this.onDrawerOpen = onDrawerOpen;
         this.onDrawerClose = onDrawerClose;
         this.initMultiplierReel();
@@ -249,8 +391,8 @@ class GameUI {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'mult-item';
         const img = document.createElement('img');
-        img.src = `assets/mult_x1.png`;
-        img.onerror = () => { img.src = 'assets/mult_x1.png'; };
+        img.src = `assets/images/mult_x1.png`;
+        img.onerror = () => { img.src = 'assets/images/mult_x1.png'; };
         itemDiv.appendChild(img);
         strip.appendChild(itemDiv);
 
@@ -272,8 +414,8 @@ class GameUI {
             const symDiv = document.createElement('div');
             symDiv.className = 'reel-symbol';
             const img = document.createElement('img');
-            img.src = `assets/sym_${String(randSym).padStart(2, '0')}.png`;
-            img.onerror = () => { img.src = 'assets/sym_01.png'; };
+            img.src = `assets/images/sym_${String(randSym).padStart(2, '0')}.png`;
+            img.onerror = () => { img.src = 'assets/images/sym_01.png'; };
             symDiv.appendChild(img);
             strip.appendChild(symDiv);
         });
@@ -376,6 +518,89 @@ class GameUI {
                 onMenuAction(action);
             });
         });
+
+        // ⌨️ 대표님 전용 [무결점 스마트 보안 격리 단축키]:
+        // 1. 대표님 로컬 PC 환경(localhost, 127.0.0.1, file://, 로컬 네트워크)에서는 번거로운 주소창 입력 없이 무조건 100% 즉시 활성화!
+        // 2. 외부 인터넷 상용 배포 도메인(magic-oceans.com 등)에서는 일반 유저의 단축키 접근을 100% 원천 차단!
+        const isLocalEnv = (typeof window !== 'undefined' && window.location) ? (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname === '' ||
+            window.location.hostname.startsWith('192.168.') ||
+            window.location.hostname.startsWith('10.') ||
+            window.location.hostname.endsWith('.local') ||
+            window.location.protocol === 'file:'
+        ) : false;
+
+        const urlParams = (typeof window !== 'undefined' && window.location)
+            ? new URLSearchParams(window.location.search)
+            : null;
+        const hasDevSecret = (urlParams && urlParams.get('dev') === 'master') ||
+            (typeof window !== 'undefined' && window.location && window.location.hash && window.location.hash.includes('dev=master'));
+
+        // 대표님 로컬 PC에서는 무조건 즉시 활성화, 외부 배포 서버에서는 오직 시크릿 암호가 있을 때만 활성화 (일반 유저 100% 원천 차단)
+        const isShortcutActive = isLocalEnv || hasDevSecret;
+
+        if (isShortcutActive) {
+            console.log('👑 [12종 심볼 테스트 단축키 활성화 완료] 숫자 1~9, 0, -, = 키를 누르면 해당 심볼 당첨 효과가 즉시 재생됩니다.');
+            window.addEventListener('keydown', (e) => {
+                if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+                const keyMap = {
+                    '1': 1, 'Digit1': 1, 'Numpad1': 1,
+                    '2': 2, 'Digit2': 2, 'Numpad2': 2,
+                    '3': 3, 'Digit3': 3, 'Numpad3': 3,
+                    '4': 4, 'Digit4': 4, 'Numpad4': 4,
+                    '5': 5, 'Digit5': 5, 'Numpad5': 5,
+                    '6': 6, 'Digit6': 6, 'Numpad6': 6,
+                    '7': 7, 'Digit7': 7, 'Numpad7': 7,
+                    '8': 8, 'Digit8': 8, 'Numpad8': 8,
+                    '9': 9, 'Digit9': 9, 'Numpad9': 9,
+                    '0': 10, 'Digit0': 10, 'Numpad0': 10,
+                    '-': 11, 'Minus': 11, 'NumpadSubtract': 11,
+                    '=': 12, 'Equal': 12, 'NumpadAdd': 12
+                };
+
+                const targetId = keyMap[e.key] || keyMap[e.code];
+                if (targetId) {
+                    e.preventDefault();
+                    this.previewSymbolWin(targetId);
+                    if (this.audio) {
+                        this.audio.playWin(targetId);
+                    }
+                }
+            });
+        }
+    }
+
+    previewSymbolWin(symId) {
+        if (symId < 1 || symId > 12) return;
+        this.clearWinAnimation();
+
+        const pad = String(symId).padStart(2, '0');
+        this.reels.forEach((id, index) => {
+            const strip = document.getElementById(id);
+            if (!strip) return;
+            strip.style.transition = 'none';
+            strip.style.transform = 'translate3d(0, 0, 0)';
+            strip.innerHTML = `<div class="reel-symbol"><img src="assets/images/sym_${pad}.png" class="win-sym-active win-sym-${pad}"></div>`;
+            this.currentReelSymbols[index] = symId;
+        });
+
+        if (this.jackpotLine) {
+            this.jackpotLine.classList.add('active');
+        }
+
+        const samplePays = {
+            1: 5000, 2: 1000000, 3: 3000, 4: 1000,
+            5: 2000, 6: 10000, 7: 100000, 8: 300000,
+            9: 500000, 10: 50000, 11: 10000, 12: 30000
+        };
+        const winAmt = samplePays[symId] || 777000;
+        if (this.winAmountEl) {
+            this.winAmountEl.classList.add('highlight');
+            this.animateNumberRollup(this.winAmountEl, 0, winAmt, 500);
+        }
     }
 
     openSideDrawer() {
@@ -419,14 +644,15 @@ class GameUI {
         if (btnHalf && inputAmount) {
             btnHalf.addEventListener('click', () => {
                 const currentSp = this.currentExchangeSp || 0;
-                inputAmount.value = Math.floor(currentSp / 2);
+                const halfSp = Math.floor((currentSp * 0.5) / 1000) * 1000;
+                inputAmount.value = halfSp >= 1000 ? halfSp : (currentSp >= 1000 ? 1000 : 0);
             });
         }
 
         if (btnAll && inputAmount) {
             btnAll.addEventListener('click', () => {
                 const currentSp = this.currentExchangeSp || 0;
-                inputAmount.value = currentSp;
+                inputAmount.value = Math.floor(currentSp / 1000) * 1000;
             });
         }
 
@@ -434,13 +660,116 @@ class GameUI {
         const btnSubmit = document.getElementById('btn-exchange-submit');
         if (btnSubmit && inputAmount && onExchangeSubmit) {
             btnSubmit.addEventListener('click', () => {
-                const val = parseInt(inputAmount.value, 10);
-                if (isNaN(val) || val <= 0) {
-                    alert('올바른 환전 수량을 숫자로 입력해주세요.');
+                const rawVal = parseInt(inputAmount.value, 10);
+                if (isNaN(rawVal) || rawVal < 1000) {
+                    alert('⚠️ 환전은 최소 1,000 SP 이상부터 가능합니다.');
                     return;
                 }
-                onExchangeSubmit(val);
+                if (rawVal % 1000 !== 0) {
+                    const flooredVal = Math.floor(rawVal / 1000) * 1000;
+                    alert(`⚠️ 환전은 1,000 SP 단위로만 가능합니다.\n(${flooredVal.toLocaleString()} SP로 자동 보정하여 환전합니다.)`);
+                    inputAmount.value = flooredVal;
+                    onExchangeSubmit(flooredVal);
+                    return;
+                }
+                onExchangeSubmit(rawVal);
             });
+        }
+
+        // 🌊 범용 시스템 알림 & 다이얼로그 이벤트 바인딩
+        if (this.btnDialogConfirm) {
+            this.btnDialogConfirm.addEventListener('click', () => this.closeOceanDialog(true));
+        }
+        if (this.btnDialogCancel) {
+            this.btnDialogCancel.addEventListener('click', () => this.closeOceanDialog(false));
+        }
+        if (this.dialogOverlay) {
+            this.dialogOverlay.addEventListener('click', (e) => {
+                if (e.target === this.dialogOverlay) this.closeOceanDialog(false);
+            });
+        }
+
+        // 전역 안전 헬퍼 등록
+        if (typeof window !== 'undefined') {
+            window.showOceanDialog = (opts) => this.openOceanDialog(opts);
+        }
+    }
+
+    openOceanDialog({ type = 'warning', icon = '⚠️', title = '알림', message = '', infoRows = [], subTip = '', confirmText = '확인', cancelText = null }) {
+        return new Promise((resolve) => {
+            if (!this.dialogOverlay) {
+                alert(`${title}\n${message}`);
+                resolve(true);
+                return;
+            }
+
+            this.dialogResolver = resolve;
+
+            // 1. 타입에 따른 아이콘 스타일
+            if (this.dialogIconWrap) {
+                this.dialogIconWrap.className = 'dialog-icon-wrap';
+                if (type === 'success') this.dialogIconWrap.classList.add('type-success');
+                else if (type === 'info') this.dialogIconWrap.classList.add('type-info');
+            }
+            if (this.dialogIcon) this.dialogIcon.textContent = icon;
+
+            // 2. 타이틀 & 메시지
+            if (this.dialogTitle) this.dialogTitle.textContent = title;
+            if (this.dialogMessage) this.dialogMessage.innerHTML = message.replace(/\n/g, '<br>');
+
+            // 3. 인포 박스 (키-값 구조)
+            if (this.dialogInfoBox) {
+                if (Array.isArray(infoRows) && infoRows.length > 0) {
+                    this.dialogInfoBox.innerHTML = '';
+                    infoRows.forEach(row => {
+                        const rowDiv = document.createElement('div');
+                        rowDiv.className = 'dialog-info-row';
+                        const valClass = row.highlight === 'sp' ? 'highlight-sp' : (row.highlight === 'gold' ? 'highlight-gold' : '');
+                        rowDiv.innerHTML = `<span>${row.label}</span><strong class="${valClass}">${row.value}</strong>`;
+                        this.dialogInfoBox.appendChild(rowDiv);
+                    });
+                    this.dialogInfoBox.style.display = 'flex';
+                } else {
+                    this.dialogInfoBox.style.display = 'none';
+                }
+            }
+
+            // 4. 서브 팁
+            if (this.dialogSubTip) {
+                if (subTip) {
+                    this.dialogSubTip.innerHTML = subTip;
+                    this.dialogSubTip.style.display = 'block';
+                } else {
+                    this.dialogSubTip.style.display = 'none';
+                }
+            }
+
+            // 5. 버튼 텍스트 & 노출
+            if (this.btnDialogConfirm) {
+                this.btnDialogConfirm.textContent = confirmText || '확인';
+            }
+            if (this.btnDialogCancel) {
+                if (cancelText) {
+                    this.btnDialogCancel.textContent = cancelText;
+                    this.btnDialogCancel.style.display = 'block';
+                } else {
+                    this.btnDialogCancel.style.display = 'none';
+                }
+            }
+
+            // 6. 모달 표시
+            this.dialogOverlay.classList.add('show');
+        });
+    }
+
+    closeOceanDialog(result = true) {
+        if (this.dialogOverlay) {
+            this.dialogOverlay.classList.remove('show');
+        }
+        if (typeof this.dialogResolver === 'function') {
+            const resolver = this.dialogResolver;
+            this.dialogResolver = null;
+            resolver(result);
         }
     }
 
@@ -450,7 +779,8 @@ class GameUI {
         const spEl = document.getElementById('exchange-modal-sp');
         const input = document.getElementById('exchange-modal-input');
         if (spEl) spEl.textContent = currentSp.toLocaleString() + ' SP';
-        if (input) input.value = currentSp;
+        const flooredSp = Math.floor(currentSp / 1000) * 1000;
+        if (input) input.value = flooredSp >= 1000 ? flooredSp : '';
         if (modal) modal.classList.add('show');
     }
 
@@ -535,9 +865,9 @@ class GameUI {
 
     spinReelsSequence(targetReels, onReelStop) {
         return new Promise((resolve) => {
-            // 🎯 대표님 황금 박자 모델 (방안 A): 1번 릴 36개(3바퀴)/1.8초, 2번 44개/2.2초, 3번 52개/2.6초
-            const reelDurations = [1.8, 2.2, 2.6];
-            const blurCountPerReel = [36, 44, 52];
+            // 🎯 대표님 지정 60개 황금 박자 모델: 1번 60개/3.0초, 2번 70개/3.5초(+0.5s), 3번 80개/4.0초(+0.5s)
+            const reelDurations = [3.0, 3.5, 4.0];
+            const blurCountPerReel = [60, 70, 80];
             let completed = 0;
 
             this.reels.forEach((id, index) => {
@@ -560,7 +890,7 @@ class GameUI {
                 // [0] 최상단: 최종 착지 타겟 심볼
                 const targetDiv = document.createElement('div');
                 targetDiv.className = 'reel-symbol';
-                targetDiv.innerHTML = `<img src="assets/sym_${String(targetSym).padStart(2, '0')}.png">`;
+                targetDiv.innerHTML = `<img src="assets/images/sym_${String(targetSym).padStart(2, '0')}.png">`;
                 strip.appendChild(targetDiv);
 
                 // [1 ~ count-1] 중간 회전 잔상 심볼
@@ -568,14 +898,14 @@ class GameUI {
                     const rand = Math.floor(Math.random() * 12) + 1;
                     const midDiv = document.createElement('div');
                     midDiv.className = 'reel-symbol';
-                    midDiv.innerHTML = `<img src="assets/sym_${String(rand).padStart(2, '0')}.png">`;
+                    midDiv.innerHTML = `<img src="assets/images/sym_${String(rand).padStart(2, '0')}.png">`;
                     strip.appendChild(midDiv);
                 }
 
                 // [count] 최하단: 현재 표시 중이던 심볼
                 const currentDiv = document.createElement('div');
                 currentDiv.className = 'reel-symbol';
-                currentDiv.innerHTML = `<img src="assets/sym_${String(currentSym).padStart(2, '0')}.png">`;
+                currentDiv.innerHTML = `<img src="assets/images/sym_${String(currentSym).padStart(2, '0')}.png">`;
                 strip.appendChild(currentDiv);
 
                 const itemHeight = strip.parentElement.clientHeight || 75;
@@ -600,7 +930,7 @@ class GameUI {
                     strip.innerHTML = '';
                     const finalDiv = document.createElement('div');
                     finalDiv.className = 'reel-symbol';
-                    finalDiv.innerHTML = `<img src="assets/sym_${String(targetSym).padStart(2, '0')}.png">`;
+                    finalDiv.innerHTML = `<img src="assets/images/sym_${String(targetSym).padStart(2, '0')}.png">`;
                     strip.appendChild(finalDiv);
                     strip.style.transform = 'translate3d(0, 0, 0)';
                     this.currentReelSymbols[index] = targetSym;
@@ -626,8 +956,8 @@ class GameUI {
             const currentMultIndex = this.currentMultIndex || 0;
             const currentVal = this.multipliersList[currentMultIndex] || 1;
             const targetVal = this.multipliersList[targetMultIndex] || 1;
-            const baseLoops = 36; // 36개 배당 심볼 맹렬한 회전
-            const duration = 3.4; // 🎯 대표님 지정 (방안 A): 정확히 3.4초에 피날레 콰광 착지 (3번 릴 2.6초 후 0.8초 뒤)
+            const baseLoops = 60; // 60개 배당 심볼 맹렬한 회전
+            const duration = 5.0; // 🎯 대표님 지정: 3번 릴(4.0초) 정지 후 정확히 1.0초 뒤(5.0초) 피날레 콰광 착지!
 
             // 1. 위에서 아래로 회전하기 위한 스트립 구축 (타겟 배당 -> 잔상 배당들 -> 현재 배당)
             strip.innerHTML = '';
@@ -636,7 +966,7 @@ class GameUI {
             // [0] 최상단: 최종 착지 타겟 배당
             const targetDiv = document.createElement('div');
             targetDiv.className = 'mult-item';
-            targetDiv.innerHTML = `<img src="assets/mult_x${targetVal}.png">`;
+            targetDiv.innerHTML = `<img src="assets/images/mult_x${targetVal}.png">`;
             strip.appendChild(targetDiv);
 
             // [1 ~ baseLoops-1] 중간 회전 잔상 배당
@@ -644,14 +974,14 @@ class GameUI {
                 const randVal = this.multipliersList[Math.floor(Math.random() * this.multipliersList.length)];
                 const midDiv = document.createElement('div');
                 midDiv.className = 'mult-item';
-                midDiv.innerHTML = `<img src="assets/mult_x${randVal}.png">`;
+                midDiv.innerHTML = `<img src="assets/images/mult_x${randVal}.png">`;
                 strip.appendChild(midDiv);
             }
 
             // [baseLoops] 최하단: 현재 표시 중이던 배당
             const currentDiv = document.createElement('div');
             currentDiv.className = 'mult-item';
-            currentDiv.innerHTML = `<img src="assets/mult_x${currentVal}.png">`;
+            currentDiv.innerHTML = `<img src="assets/images/mult_x${currentVal}.png">`;
             strip.appendChild(currentDiv);
 
             const targetOffset = baseLoops * itemHeight;
@@ -674,7 +1004,7 @@ class GameUI {
                 strip.innerHTML = '';
                 const finalDiv = document.createElement('div');
                 finalDiv.className = 'mult-item';
-                finalDiv.innerHTML = `<img src="assets/mult_x${targetVal}.png">`;
+                finalDiv.innerHTML = `<img src="assets/images/mult_x${targetVal}.png">`;
                 strip.appendChild(finalDiv);
                 strip.style.transform = 'translate3d(0, 0, 0)';
                 this.currentMultIndex = targetMultIndex;
@@ -684,7 +1014,7 @@ class GameUI {
         });
     }
 
-    showWinAnimation(amount) {
+    showWinAnimation(amount, winningSymbolId) {
         if (this.jackpotLine) {
             this.jackpotLine.classList.add('active');
         }
@@ -692,6 +1022,30 @@ class GameUI {
         if (this.winAmountEl) {
             this.winAmountEl.classList.add('highlight');
             this.animateNumberRollup(this.winAmountEl, 0, amount, 600);
+        }
+
+        // 🌟 12종 당첨 심볼 및 체리 2개 콤보 전용 인박스(In-box) 마이크로 인터랙션 가동
+        const symId = winningSymbolId || (this.currentReelSymbols ? this.currentReelSymbols[0] : null);
+        if (symId === 13) {
+            // 🍒 [체리 2개 콤보]: 릴 중 체리(sym_01) 심볼에만 하이라이트 부여
+            this.reels.forEach((id) => {
+                const strip = document.getElementById(id);
+                if (!strip) return;
+                const img = strip.querySelector('.reel-symbol img');
+                if (img && img.src.includes('sym_01')) {
+                    img.classList.add('win-sym-active', 'win-sym-01');
+                }
+            });
+        } else if (symId) {
+            const animClass = `win-sym-${String(symId).padStart(2, '0')}`;
+            this.reels.forEach((id) => {
+                const strip = document.getElementById(id);
+                if (!strip) return;
+                const img = strip.querySelector('.reel-symbol img');
+                if (img) {
+                    img.classList.add('win-sym-active', animClass);
+                }
+            });
         }
     }
 
@@ -702,6 +1056,16 @@ class GameUI {
         if (this.winAmountEl) {
             this.winAmountEl.classList.remove('highlight');
         }
+
+        // 🌟 당첨 심볼 연출 클래스 초기화
+        this.reels.forEach((id) => {
+            const strip = document.getElementById(id);
+            if (!strip) return;
+            const img = strip.querySelector('.reel-symbol img');
+            if (img) {
+                img.className = img.className.replace(/\bwin-sym-\S+/g, '').trim();
+            }
+        });
     }
 
     animateNumberRollup(element, start, end, duration) {
@@ -951,30 +1315,134 @@ class GameEngine {
         this.ui.setWinDisplay(0);
         this.rechargeManager.updateBadge();
         this.updateShareBonusBadge();
+
+        // 💧 평상시 대기(Idle) 물방울 앰비언스 가동 및 브라우저 Autoplay 언락 리스너
+        this.audio.startIdleAmbience();
+        const unlockAudio = () => {
+            this.audio.unlockAudio();
+            window.removeEventListener('pointerdown', unlockAudio);
+            window.removeEventListener('keydown', unlockAudio);
+        };
+        window.addEventListener('pointerdown', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
+
+        // 💱 아바타 시스템 및 외부 안전 금융 트랜잭션 동기화 이벤트
+        window.addEventListener('magic-oceans:sync-chip', (e) => {
+            if (e.detail && typeof e.detail.delta === 'number') {
+                this.economy.chip += e.detail.delta;
+                if (this.economy.chip < 0) this.economy.chip = 0;
+                this.ui.updateEconomyDisplay(this.economy);
+            } else if (e.detail && typeof e.detail.setChip === 'number') {
+                this.economy.chip = Math.max(0, e.detail.setChip);
+                this.ui.updateEconomyDisplay(this.economy);
+            }
+        });
+
+        window.addEventListener('magic-oceans:sp-to-credit', (e) => {
+            const rawAmount = e.detail && typeof e.detail.amount === 'number' ? e.detail.amount : null;
+            const amount = (rawAmount !== null) ? Math.floor(rawAmount / 1000) * 1000 : null;
+            if (amount !== null && amount < 1000) {
+                if (e.detail && typeof e.detail.callback === 'function') e.detail.callback(0);
+                return;
+            }
+            const exchanged = this.economy.exchangeChipToCredit(amount);
+            this.ui.updateEconomyDisplay(this.economy);
+            if (exchanged > 0) this.audio.playWin();
+            if (e.detail && typeof e.detail.callback === 'function') {
+                e.detail.callback(exchanged);
+            }
+        });
+
+        window.addEventListener('magic-oceans:query-economy', (e) => {
+            if (e.detail && typeof e.detail.callback === 'function') {
+                e.detail.callback({
+                    credit: this.economy.credit,
+                    chip: this.economy.chip,
+                    bet: this.economy.bet
+                });
+            }
+        });
     }
 
     onChipBoxClick() {
         if (this.state !== 'IDLE') {
-            alert('스핀 진행 중에는 환전할 수 없습니다.');
+            this.ui.openOceanDialog({
+                type: 'warning',
+                icon: '⏳',
+                title: '스핀 진행 중',
+                message: '스핀 릴이 완전히 정지한 후 환전을 진행해주세요.',
+                confirmText: '확인'
+            });
             return;
         }
-        if (this.economy.chip <= 0) {
-            alert('현재 보유 중인 당첨 SP가 0개입니다.\n릴을 돌려 잭팟 SP를 획득해보세요!');
+        if (this.economy.chip < 1000) {
+            this.ui.openOceanDialog({
+                type: 'warning',
+                icon: '⚠️',
+                title: 'Point 환전 안내',
+                message: '현재 보유 중인 당첨금이 부족하여 환전할 수 없습니다.',
+                infoRows: [
+                    { label: '🪙 현재 보유 당첨금', value: `${this.economy.chip.toLocaleString()} SP`, highlight: 'sp' },
+                    { label: '⚡ 최소 환전 조건', value: '1,000 SP (1,000 단위)', highlight: 'gold' }
+                ],
+                subTip: '💡 릴을 돌려 짜릿한 잭팟 SP를 먼저 획득해보세요!',
+                confirmText: '확인 (릴 회전하러 가기)'
+            });
             return;
         }
         this.ui.openExchangeModal(this.economy.chip);
     }
 
     handleExchangeSubmit(amount) {
+        if (amount < 1000) {
+            this.ui.openOceanDialog({
+                type: 'warning',
+                icon: '⚠️',
+                title: '환전 수량 미달',
+                message: '환전은 최소 1,000 SP 이상부터 가능합니다.',
+                confirmText: '확인'
+            });
+            return;
+        }
+        if (amount % 1000 !== 0) {
+            amount = Math.floor(amount / 1000) * 1000;
+        }
         if (amount > this.economy.chip) {
-            alert(`보유 SP(${this.economy.chip.toLocaleString()} SP)보다 많은 수량을 환전할 수 없습니다.`);
+            this.ui.openOceanDialog({
+                type: 'warning',
+                icon: '⚠️',
+                title: '보유 수량 초과',
+                message: `보유 SP(${this.economy.chip.toLocaleString()} SP)보다 많은 수량을 환전할 수 없습니다.`,
+                confirmText: '확인'
+            });
             return;
         }
         const exchanged = this.economy.exchangeChipToCredit(amount);
+        if (exchanged <= 0) {
+            this.ui.openOceanDialog({
+                type: 'warning',
+                icon: '⚠️',
+                title: '환전 불가',
+                message: '환전 가능한 최소 수량(1,000 SP)에 미달합니다.',
+                confirmText: '확인'
+            });
+            return;
+        }
         this.ui.updateEconomyDisplay(this.economy);
         this.ui.closeExchangeModal();
         this.audio.playWin();
-        alert(`[환전 완료]\n${exchanged.toLocaleString()} SP가 ${exchanged.toLocaleString()} Point로 정상 환전되었습니다!`);
+        this.ui.openOceanDialog({
+            type: 'success',
+            icon: '🎉',
+            title: 'Point 환전 완료',
+            message: '보유 잭팟 당첨금이 슬롯 Point로 정상 환전되었습니다!',
+            infoRows: [
+                { label: '💰 환전된 당첨금', value: `${exchanged.toLocaleString()} SP`, highlight: 'sp' },
+                { label: '⚡ 충전된 크레딧', value: `+${exchanged.toLocaleString()} P`, highlight: 'gold' }
+            ],
+            subTip: '🎰 지금 바로 릴을 돌려 대박 잭팟을 노려보세요!',
+            confirmText: '확인 (릴 회전하기)'
+        });
     }
 
     getShareBonusRecord() {
@@ -1073,14 +1541,15 @@ class GameEngine {
 
         // 1. 베팅액 차감 검사 (Point 부족 시 스마트 환전 안내)
         if (!this.economy.canBet()) {
-            if (this.economy.chip >= this.economy.bet) {
+            const availableSp = Math.floor(this.economy.chip / 1000) * 1000;
+            if (availableSp >= this.economy.bet) {
                 const doExchange = confirm(
-                    `[Point 부족 알림]\n현재 Point가 부족합니다 (${this.economy.credit.toLocaleString()} Point).\n보유 중인 당첨금(${this.economy.chip.toLocaleString()} SP)을 Point로 즉시 환전하시겠습니까? (1 SP = 1 Point)`
+                    `[Point 부족 알림]\n현재 Point가 부족합니다 (${this.economy.credit.toLocaleString()} Point).\n보유 중인 당첨금 중 ${availableSp.toLocaleString()} SP를 Point로 즉시 환전하시겠습니까? (1 SP = 1 Point / 1,000 SP 단위)`
                 );
                 if (doExchange) {
-                    const exchanged = this.economy.exchangeChipToCredit(this.economy.chip);
+                    const exchanged = this.economy.exchangeChipToCredit(availableSp);
                     this.ui.updateEconomyDisplay(this.economy);
-                    alert(`[환전 완료] ${exchanged.toLocaleString()} SP가 전액 Point로 환전되었습니다! 스핀을 진행합니다.`);
+                    alert(`[환전 완료] ${exchanged.toLocaleString()} SP가 Point로 환전되었습니다! 스핀을 진행합니다.`);
                 } else {
                     this.stopAutoSpin();
                     return;
@@ -1115,7 +1584,8 @@ class GameEngine {
         // 2. 결과 사전 생성 (기밀 수학 모델 연동)
         const result = this.slotMachine.generateSpinResult(this.economy.bet);
 
-        // 3. 사운드 및 GPU 가속 회전 시작
+        // 3. 사운드 및 GPU 가속 회전 시작 (릴 회전 및 게임 중에는 물방울 앰비언스 즉시 전면 금지)
+        this.audio.stopIdleAmbience();
         this.audio.playSpin();
 
         await this.ui.executeSpinSequence(
@@ -1138,6 +1608,11 @@ class GameEngine {
         this.state = 'IDLE';
         this.ui.setButtonsDisabled(false, this.isAutoSpinning);
 
+        // 💧 릴 회전 및 당첨 연출 종료 후 대기(Idle) 복귀 시 물방울 앰비언스 재개 (오토스핀 진행 중에는 금지)
+        if (!this.isAutoSpinning) {
+            this.audio.startIdleAmbience();
+        }
+
         if (typeof onComplete === 'function') {
             onComplete();
         }
@@ -1158,11 +1633,11 @@ class GameEngine {
                     );
                 }
             }
-            this.ui.showWinAnimation(result.winAmount);
-            this.audio.playWin();
+            this.ui.showWinAnimation(result.winAmount, result.hitSymbol ? result.hitSymbol.id : result.reels[0]);
+            this.audio.playWin(result.hitSymbol ? result.hitSymbol.id : result.reels[0]);
             this.ui.updateEconomyDisplay(this.economy);
-            // 당첨 연출 감상 시간
-            await new Promise(r => setTimeout(r, 900));
+            // 🎯 대표님 지정: 당첨 효과 및 축하 연출 집중 감상 시간 1.0초 (1000ms)
+            await new Promise(r => setTimeout(r, 1000));
         }
     }
 
@@ -1172,6 +1647,7 @@ class GameEngine {
         this.isAutoSpinning = true;
         this.autoSpinRemaining = count;
         this.ui.setAutoSpinActive(true);
+        this.audio.stopIdleAmbience(); // 💧 오토스핀 시작 시 물방울 앰비언스 즉시 전면 금지
 
         this.runNextAutoSpin();
     }
@@ -1198,11 +1674,12 @@ class GameEngine {
 
         this.spin(() => {
             if (this.isAutoSpinning) {
+                // 🎯 대표님 지정: 릴 재구동 안정화 텀 1.0초 (1000ms)
                 this.autoSpinTimer = setTimeout(() => {
                     if (this.isAutoSpinning) {
                         this.runNextAutoSpin();
                     }
-                }, 600);
+                }, 1000);
             }
         });
     }
@@ -1216,6 +1693,11 @@ class GameEngine {
         }
         this.ui.setAutoSpinActive(false);
         this.ui.setButtonsDisabled(false, false);
+
+        // 💧 오토스핀 종료 후 현재 릴이 돌지 않는 IDLE 상태라면 평상시 대기 앰비언스 즉시 복귀
+        if (this.state === 'IDLE') {
+            this.audio.startIdleAmbience();
+        }
     }
 
     handleMenuAction(action) {

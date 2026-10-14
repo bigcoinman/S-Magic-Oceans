@@ -22,7 +22,7 @@
             <div class="header-box chip-box">
                 <div class="text-val" id="chip-val">0 SP</div>
             </div>
-            <img src="assets/btn_menu.png" class="btn-menu" id="btn-menu" alt="Menu">
+            <img src="assets/images/btn_menu.png" class="btn-menu" id="btn-menu" alt="Menu">
         </header>
 
         <!-- 🏆 [스케치 좌측] 실시간 랭킹 미니보드 -->
@@ -79,11 +79,11 @@
                 <div class="reel"><div class="symbol-strip" id="reel1-strip"></div></div>
                 <div class="reel"><div class="symbol-strip" id="reel2-strip"></div></div>
                 <div class="reel"><div class="symbol-strip" id="reel3-strip"></div></div>
-                <img src="assets/jackpot line.png" class="jackpot-line" id="jackpot-line" alt="Jackpot Line">
+                <img src="assets/images/jackpot line.png" class="jackpot-line" id="jackpot-line" alt="Jackpot Line">
             </div>
 
             <!-- 릴 골드 프레임 오버레이 (누끼 투명 PNG) -->
-            <img src="assets/Reel slot bg image-2.png" class="reel-frame-overlay" id="reel-frame-overlay" alt="Reel Gold Frame">
+            <img src="assets/images/Reel slot bg image-2.png" class="reel-frame-overlay" id="reel-frame-overlay" alt="Reel Gold Frame">
         </div>
 
         <!-- 하단 컨트롤 패널 -->
@@ -105,10 +105,10 @@
 
             <!-- 컨트롤 버튼 -->
             <div class="ui-element btn-auto" id="btn-auto">
-                <img src="assets/btn_autospin.png" alt="Auto Spin">
+                <img src="assets/images/btn_autospin.png" alt="Auto Spin">
             </div>
             <div class="ui-element btn-spin" id="btn-spin">
-                <img src="assets/btn_spin.png" alt="Spin">
+                <img src="assets/images/btn_spin.png" alt="Spin">
             </div>
         </footer>
             
@@ -192,15 +192,32 @@
                         <span class="balance-label">보유 잭팟 당첨금</span>
                         <span class="balance-amount highlight-sp" id="exchange-modal-sp">0 SP</span>
                     </div>
-                    <div class="exchange-rate-badge">환전 비율 1 SP = 1 Point (수수료 0%)</div>
+                    <div class="exchange-rate-badge">환전 비율 1 SP = 1 Point (최소 1,000 SP 단위 / 수수료 0%)</div>
                     <div class="exchange-input-wrap">
-                        <input type="number" id="exchange-modal-input" min="1" placeholder="환전할 SP 수량 입력">
+                        <input type="number" id="exchange-modal-input" min="1000" step="1000" placeholder="환전할 SP 수량 입력 (1,000 단위)">
                     </div>
                     <div class="exchange-quick-btns">
                         <button type="button" class="btn-quick" id="btn-exchange-half">50% 환전</button>
                         <button type="button" class="btn-quick" id="btn-exchange-all">전액 환전</button>
                     </div>
                     <button type="button" class="btn-exchange-submit" id="btn-exchange-submit">환전 실행</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🌊 범용 시스템 알림 & 다이얼로그 모달 (Ocean Glass Dialog) -->
+        <div class="custom-modal-overlay system-dialog-overlay" id="system-dialog-overlay">
+            <div class="custom-modal-card system-dialog-card">
+                <div class="dialog-icon-wrap" id="dialog-icon-wrap">
+                    <span class="dialog-icon" id="dialog-icon">⚠️</span>
+                </div>
+                <div class="dialog-title" id="dialog-title">알림</div>
+                <div class="dialog-message" id="dialog-message">상세 메시지 내용</div>
+                <div class="dialog-info-box" id="dialog-info-box" style="display: none;"></div>
+                <div class="dialog-sub-tip" id="dialog-sub-tip" style="display: none;"></div>
+                <div class="dialog-action-row" id="dialog-action-row">
+                    <button type="button" class="btn-dialog-cancel" id="btn-dialog-cancel" style="display: none;">취소</button>
+                    <button type="button" class="btn-dialog-confirm" id="btn-dialog-confirm">확인</button>
                 </div>
             </div>
         </div>
@@ -213,97 +230,114 @@
                     <button class="btn-close" id="btn-paytable-close">✕</button>
                 </div>
                 <div class="modal-body paytable-body">
-                    <div class="paytable-section-title">🎰 12종 심볼 배당 (동일 심볼 3개 일치 시)</div>
+                    <div class="paytable-section-title">👑 스페셜 심볼 (Special Symbols)</div>
                     <div class="paytable-grid">
                         <div class="paytable-item jackpot-special">
-                            <img src="assets/sym_02.png" alt="Joker">
+                            <img src="assets/images/sym_02.png" alt="Joker">
                             <div class="sym-desc">
-                                <span class="sym-name highlight-joker">조커 (Joker)</span>
-                                <span class="sym-multiplier">최대 x200 (메가잭팟)</span>
+                                <span class="sym-name highlight-joker">조커 (Joker) 3개</span>
+                                <span class="sym-multiplier">1,000,000 SP (x1,000)</span>
                             </div>
                         </div>
                         <div class="paytable-item">
-                            <img src="assets/sym_10.png" alt="Seven">
+                            <img src="assets/images/sym_09.png" alt="3BAR">
                             <div class="sym-desc">
-                                <span class="sym-name">행운의 7</span>
-                                <span class="sym-multiplier">x80.0</span>
+                                <span class="sym-name">트리플 BAR (3BAR) 3개</span>
+                                <span class="sym-multiplier">500,000 SP (x500)</span>
                             </div>
                         </div>
                         <div class="paytable-item">
-                            <img src="assets/sym_09.png" alt="BAR3">
+                            <img src="assets/images/sym_08.png" alt="2BAR">
                             <div class="sym-desc">
-                                <span class="sym-name">트리플 BAR</span>
-                                <span class="sym-multiplier">x40.0</span>
+                                <span class="sym-name">더블 BAR (2BAR) 3개</span>
+                                <span class="sym-multiplier">300,000 SP (x300)</span>
                             </div>
                         </div>
                         <div class="paytable-item">
-                            <img src="assets/sym_08.png" alt="BAR2">
+                            <img src="assets/images/sym_07.png" alt="1BAR">
                             <div class="sym-desc">
-                                <span class="sym-name">더블 BAR</span>
-                                <span class="sym-multiplier">x25.0</span>
+                                <span class="sym-name">싱글 BAR (1BAR) 3개</span>
+                                <span class="sym-multiplier">100,000 SP (x100)</span>
                             </div>
                         </div>
                         <div class="paytable-item">
-                            <img src="assets/sym_07.png" alt="BAR1">
+                            <img src="assets/images/sym_10.png" alt="Seven">
                             <div class="sym-desc">
-                                <span class="sym-name">싱글 BAR</span>
-                                <span class="sym-multiplier">x18.0</span>
+                                <span class="sym-name">행운의 7 (Seven) 3개</span>
+                                <span class="sym-multiplier">50,000 SP (x50)</span>
                             </div>
                         </div>
                         <div class="paytable-item">
-                            <img src="assets/sym_11.png" alt="Diamond">
+                            <img src="assets/images/sym_12.png" alt="SpadeAce">
                             <div class="sym-desc">
-                                <span class="sym-name">다이아몬드</span>
-                                <span class="sym-multiplier">x12.0</span>
-                            </div>
-                        </div>
-                        <div class="paytable-item">
-                            <img src="assets/sym_06.png" alt="Target">
-                            <div class="sym-desc">
-                                <span class="sym-name">타겟 (Target)</span>
-                                <span class="sym-multiplier">x10.0</span>
-                            </div>
-                        </div>
-                        <div class="paytable-item">
-                            <img src="assets/sym_05.png" alt="Star">
-                            <div class="sym-desc">
-                                <span class="sym-name">불가사리</span>
-                                <span class="sym-multiplier">x7.0</span>
-                            </div>
-                        </div>
-                        <div class="paytable-item">
-                            <img src="assets/sym_12.png" alt="Anchor">
-                            <div class="sym-desc">
-                                <span class="sym-name">닻 (Anchor)</span>
-                                <span class="sym-multiplier">x5.0</span>
-                            </div>
-                        </div>
-                        <div class="paytable-item">
-                            <img src="assets/sym_04.png" alt="Bell">
-                            <div class="sym-desc">
-                                <span class="sym-name">황금 벨</span>
-                                <span class="sym-multiplier">x3.5</span>
-                            </div>
-                        </div>
-                        <div class="paytable-item">
-                            <img src="assets/sym_03.png" alt="Shell">
-                            <div class="sym-desc">
-                                <span class="sym-name">조개 (Shell)</span>
-                                <span class="sym-multiplier">x2.5</span>
-                            </div>
-                        </div>
-                        <div class="paytable-item">
-                            <img src="assets/sym_01.png" alt="Cherry">
-                            <div class="sym-desc">
-                                <span class="sym-name">체리 (Cherry)</span>
-                                <span class="sym-multiplier">x1.5</span>
+                                <span class="sym-name">스페이드 A (Spade Ace) 3개</span>
+                                <span class="sym-multiplier">30,000 SP (x30)</span>
                             </div>
                         </div>
                     </div>
-                    <div class="paytable-section-title">✖️ 상단 배당 릴 (Multiplier Reel)</div>
+
+                    <div class="paytable-section-title">🔹 일반 심볼 (Normal Symbols) <small style="font-size:0.8rem; color:#60a5fa;">[배당릴 x1 ~ x5 한정 적용 / x10 이상 절대 불가]</small></div>
+                    <div class="paytable-grid">
+                        <div class="paytable-item">
+                            <img src="assets/images/sym_06.png" alt="Target">
+                            <div class="sym-desc">
+                                <span class="sym-name">타겟 (Target) 3개</span>
+                                <span class="sym-multiplier">10,000 SP (x10 ~ 최대 50,000 SP)</span>
+                            </div>
+                        </div>
+                        <div class="paytable-item">
+                            <img src="assets/images/sym_11.png" alt="Diamond">
+                            <div class="sym-desc">
+                                <span class="sym-name">다이아몬드 (Diamond) 3개</span>
+                                <span class="sym-multiplier">10,000 SP (x10 ~ 최대 50,000 SP)</span>
+                            </div>
+                        </div>
+                        <div class="paytable-item">
+                            <img src="assets/images/sym_01.png" alt="Cherry">
+                            <div class="sym-desc">
+                                <span class="sym-name">체리 (Cherry) 3개</span>
+                                <span class="sym-multiplier">5,000 SP (x5 ~ 최대 25,000 SP)</span>
+                            </div>
+                        </div>
+                        <div class="paytable-item">
+                            <img src="assets/images/sym_03.png" alt="Shell">
+                            <div class="sym-desc">
+                                <span class="sym-name">가리비 (Shell) 3개</span>
+                                <span class="sym-multiplier">3,000 SP (x3 ~ 최대 15,000 SP)</span>
+                            </div>
+                        </div>
+                        <div class="paytable-item">
+                            <img src="assets/images/sym_05.png" alt="Star">
+                            <div class="sym-desc">
+                                <span class="sym-name">스타 (Star) 3개</span>
+                                <span class="sym-multiplier">2,000 SP (x2 ~ 최대 10,000 SP)</span>
+                            </div>
+                        </div>
+                        <div class="paytable-item">
+                            <img src="assets/images/sym_04.png" alt="Bell">
+                            <div class="sym-desc">
+                                <span class="sym-name">종 (Bell) 3개</span>
+                                <span class="sym-multiplier">1,000 SP (x1 ~ 최대 5,000 SP)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="paytable-section-title">🍒 특별 손실 방어 콤보 룰 <small style="font-size:0.8rem; color:#60a5fa;">[배당릴 x1 ~ x5 한정 적용]</small></div>
+                    <div class="paytable-grid">
+                        <div class="paytable-item special-cherry-rule">
+                            <img src="assets/images/sym_01.png" alt="Cherry Any 2">
+                            <div class="sym-desc">
+                                <span class="sym-name highlight-gold">체리 2개 + 랜덤 1개</span>
+                                <span class="sym-multiplier">500 SP (x0.5 ~ 최대 2,500 SP)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="paytable-section-title">✖️ 상단 배당 릴 (Multiplier Reel) 격리 규칙</div>
                     <div class="multiplier-info-box">
-                        매 스핀마다 상단 릴에서 <strong>x1, x2, x3, x4, x5, x10</strong> 중 하나의 배당이 당첨금에 곱해집니다.<br>
-                        <span class="highlight-gold">🏆 최고 당첨: 조커(x200) × 배당(x10) = 총 2,000배 (2,000,000 SP) 메가잭팟!</span>
+                        • 👑 <strong>스페셜 심볼 당첨 시</strong>: 상단 릴 <strong>전체 10종 (x1, x2, x3, x4, x5, x10, x20, x30, x50, x100)</strong> 모두 당첨 가능!<br>
+                        • 🔹 <strong>일반 심볼 & 체리 콤보</strong>: 상단 릴 <strong>x1, x2, x3, x4, x5 배수 한정 당첨</strong> (x10 이상의 초특급 고배당은 절대 나오지 않음)<br>
+                        <span class="highlight-gold">🏆 최고 당첨: 조커(x1,000) × 골드 배당(x100) = 총 100,000배 (100,000,000 SP = 1억 SP!) 울트라 메가잭팟!</span>
                     </div>
                 </div>
             </div>
@@ -392,17 +426,64 @@
                         </div>
                     </div>
 
-                    <!-- 💱 SP ➔ G코인 즉시 환전소 -->
+                    <!-- 💱 중앙 환전소 (SP ⇄ G-Coin 듀얼 탭) -->
                     <div class="gcoin-exchange-card">
-                        <div class="gex-title">💱 잭팟금(SP) ➔ G코인 교환기</div>
-                        <div class="gex-rate-desc">교환 비율: <strong>10,000 SP = 1 G코인</strong> (수수료 0%)</div>
-                        <div class="gex-balance-info">
-                            <span>보유 당첨금: <strong class="highlight-sp" id="gex-current-sp">0 SP</strong></span>
-                            <span>➔ 교환 가능: <strong class="highlight-gold" id="gex-max-gcoin">0 G</strong></span>
+                        <!-- 듀얼 탭 바 -->
+                        <div class="gex-tabs-nav">
+                            <button type="button" class="gex-tab-btn active" id="tab-btn-deposit">
+                                <span class="tab-icon">💰</span> SP ➔ G-Coin <span class="tab-sub">(자산 예치)</span>
+                            </button>
+                            <button type="button" class="gex-tab-btn" id="tab-btn-withdraw">
+                                <span class="tab-icon">🚨</span> G-Coin ➔ SP <span class="tab-sub">(비상금 환전)</span>
+                            </button>
                         </div>
-                        <div class="gex-action-row">
-                            <button type="button" class="btn-gex-quick" id="btn-gex-half">50% 교환</button>
-                            <button type="button" class="btn-gex-quick" id="btn-gex-all">전액 교환</button>
+
+                        <!-- 탭 1: SP ➔ G-Coin (자산 예치) -->
+                        <div class="gex-pane active" id="pane-gex-deposit">
+                            <div class="gex-rate-desc">교환 비율: <strong>10,000 SP = 1 G-Coin</strong> (수수료 0%)</div>
+                            <div class="gex-balance-info">
+                                <span>보유 당첨금: <strong class="highlight-sp" id="gex-current-sp">0 SP</strong></span>
+                                <span>➔ 예치 가능: <strong class="highlight-gold" id="gex-max-gcoin">0 G</strong></span>
+                            </div>
+                            <div class="gex-action-row">
+                                <button type="button" class="btn-gex-quick" id="btn-gex-half">50% 예치</button>
+                                <button type="button" class="btn-gex-quick" id="btn-gex-all">전액 예치</button>
+                            </div>
+                            <div class="gex-custom-row">
+                                <input type="number" class="gex-input" id="input-gex-deposit-sp" placeholder="예치할 SP 수량 (10,000 단위)" step="10000" min="10000">
+                                <button type="button" class="btn-gex-submit" id="btn-gex-deposit-submit">예치하기</button>
+                            </div>
+                            <div class="gex-tip-text">💡 예치된 G-Coin으로 럭셔리 상점에서 아바타/슈퍼카를 구매하고 총자산 랭킹을 높이세요!</div>
+                        </div>
+
+                        <!-- 탭 2: G-Coin ➔ SP (비상금 환전) -->
+                        <div class="gex-pane" id="pane-gex-withdraw" style="display: none;">
+                            <div class="gex-rate-desc">환전 비율: <strong>1 G-Coin = 10,000 SP</strong> (10,000 크레딧 분량, 수수료 0%)</div>
+                            <div class="gex-balance-info">
+                                <span>보유 자산: <strong class="highlight-gold" id="gex-withdraw-cur-gcoin">0 G</strong></span>
+                                <span>➔ 환전 SP: <strong class="highlight-sp" id="gex-withdraw-est-sp">0 SP</strong></span>
+                            </div>
+                            <div class="gex-action-row gex-withdraw-presets">
+                                <button type="button" class="btn-withdraw-preset" id="btn-withdraw-10g">
+                                    <span class="preset-title">⚡ 10 G 환전</span>
+                                    <span class="preset-desc">10만 SP (슬롯 100회)</span>
+                                </button>
+                                <button type="button" class="btn-withdraw-preset" id="btn-withdraw-50g">
+                                    <span class="preset-title">🚀 50 G 환전</span>
+                                    <span class="preset-desc">50만 SP (슬롯 500회)</span>
+                                </button>
+                                <button type="button" class="btn-withdraw-preset btn-preset-all" id="btn-withdraw-all">
+                                    <span class="preset-title">🔥 전액 환전</span>
+                                    <span class="preset-desc" id="label-withdraw-all-desc">보유 전액 SP 충전</span>
+                                </button>
+                            </div>
+                            <div class="gex-custom-row">
+                                <input type="number" class="gex-input input-withdraw" id="input-withdraw-gcoin" placeholder="직접 입력 (G-Coin 수량)" min="1" step="1">
+                                <button type="button" class="btn-gex-submit btn-withdraw-submit" id="btn-withdraw-submit">비상금 환전</button>
+                            </div>
+                            <div class="gex-preview-badge" id="gex-withdraw-preview-badge">
+                                💡 <span id="preview-calc-text">1 G-Coin 환전 시 10,000 SP(슬롯 10회 스핀)를 확보합니다.</span>
+                            </div>
                         </div>
                     </div>
                 </div>

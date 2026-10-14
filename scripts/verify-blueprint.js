@@ -161,11 +161,11 @@ assertRule(
 // ----------------------------------------------------------------------------
 console.log('\n--- [검문소 9] 사운드 에셋 보존 검증 ---');
 const requiredSounds = [
-    'assets/ReelStart.wav',
-    'assets/Reelstop.wav',
-    'assets/hitbell.wav',
-    'assets/WHALE.wav',
-    'assets/pang_0000.wav'
+    'assets/sounds/ReelStart.wav',
+    'assets/sounds/Reelstop.wav',
+    'assets/sounds/hitbell.wav',
+    'assets/sounds/WHALE.wav',
+    'assets/sounds/pang_0000.wav'
 ];
 let soundsOk = true;
 for (const snd of requiredSounds) {

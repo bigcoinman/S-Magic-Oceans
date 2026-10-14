@@ -46,7 +46,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: url('assets/Slot BG 26-10-13.png') no-repeat center center;
+    background: url('assets/images/Slot BG 26-10-13.png') no-repeat center center;
     background-size: cover;
     z-index: 1;
 }
@@ -249,7 +249,7 @@ body {
 /* ✖️ 배당창 (Multiplier Window: 3D 드럼 실린더 페이드 마스크 도킹) */
 .multiplier-window {
     position: absolute;
-    left: 37.4%;
+    left: 37.2%;
     /* ⬅️ 약 1px 좌측 이동 (중심 X: 50.08% 완벽 대칭) */
     top: 68.3%;
     /* ↕️ 1px 추가 하향 이동 (배당창 프레임 정중앙 안착) */
@@ -434,6 +434,273 @@ body {
 .jackpot-line.active {
     display: block;
     animation: jackpotGlow 0.6s infinite ease-in-out;
+}
+
+/* ============================================================================
+   🌟 [12종 심볼 인박스(In-Box) 맞춤 당첨 마이크로 인터랙션]
+   - 60fps GPU 가속 (transform, filter)
+   - 릴 박스(overflow: hidden) 안전 완충 마진 100% 준수 (박스 이탈 0%)
+   ============================================================================ */
+.win-sym-active {
+    will-change: transform, filter;
+    z-index: 5 !important;
+}
+
+/* 🍒 sym_01: 체리 - 과즙 팝 & 젤리 바운스 (빛 70% 감쇠) */
+@keyframes winCherryPop {
+
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+        filter: drop-shadow(0 0 1px rgba(255, 60, 80, 0.3)) brightness(1);
+    }
+
+    25% {
+        transform: scale(1.12, 0.94) rotate(-3deg);
+        filter: drop-shadow(0 0 4px rgba(255, 23, 68, 0.45)) brightness(1.08);
+    }
+
+    50% {
+        transform: scale(0.95, 1.1) rotate(3deg);
+        filter: drop-shadow(0 0 5px rgba(255, 82, 82, 0.45)) brightness(1.09);
+    }
+
+    75% {
+        transform: scale(1.08, 0.98) rotate(-1deg);
+        filter: drop-shadow(0 0 3px rgba(255, 23, 68, 0.35)) brightness(1.06);
+    }
+}
+
+.win-sym-01 {
+    animation: winCherryPop 0.65s infinite ease-in-out;
+}
+
+/* 🃏 sym_02: 조커 (메가잭팟) - 조커 매드니스 댄스 & 프리즘 림라이트 (빛 70% 감쇠) */
+@keyframes winJokerMadness {
+
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+        filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.35)) brightness(1);
+    }
+
+    25% {
+        transform: scale(1.11) rotate(-6deg);
+        filter: drop-shadow(0 0 5px rgba(255, 0, 255, 0.4)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)) brightness(1.1);
+    }
+
+    50% {
+        transform: scale(1.14) rotate(0deg);
+        filter: drop-shadow(0 0 6px rgba(0, 255, 255, 0.45)) drop-shadow(0 0 2px rgba(255, 215, 0, 0.35)) brightness(1.12);
+    }
+
+    75% {
+        transform: scale(1.11) rotate(6deg);
+        filter: drop-shadow(0 0 5px rgba(255, 255, 0, 0.4)) drop-shadow(0 0 2px rgba(255, 0, 85, 0.3)) brightness(1.1);
+    }
+}
+
+.win-sym-02 {
+    animation: winJokerMadness 0.75s infinite ease-in-out;
+}
+
+/* 🐚 sym_03: 조개 & 진주 - 펄 오로라 브리딩 (빛 70% 감쇠) */
+@keyframes winShellAurora {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 1px rgba(100, 240, 255, 0.3)) brightness(1);
+    }
+
+    50% {
+        transform: scale(1.09);
+        filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.45)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)) brightness(1.09);
+    }
+}
+
+.win-sym-03 {
+    animation: winShellAurora 0.8s infinite ease-in-out;
+}
+
+/* 🔔 sym_04: 골든 벨 - 황금 타종 링잉 (빛 70% 감쇠) */
+@keyframes winBellRing {
+
+    0%,
+    100% {
+        transform: rotate(0deg) scale(1);
+        filter: drop-shadow(0 0 1px rgba(255, 215, 0, 0.3)) brightness(1);
+    }
+
+    20% {
+        transform: rotate(-8deg) scale(1.08);
+        filter: drop-shadow(-2px 0 4px rgba(255, 215, 0, 0.45)) brightness(1.09);
+    }
+
+    45% {
+        transform: rotate(8deg) scale(1.08);
+        filter: drop-shadow(2px 0 4px rgba(255, 215, 0, 0.45)) brightness(1.09);
+    }
+
+    70% {
+        transform: rotate(-4deg) scale(1.04);
+        filter: drop-shadow(-1px 0 3px rgba(255, 235, 59, 0.35)) brightness(1.05);
+    }
+
+    85% {
+        transform: rotate(3deg) scale(1.02);
+    }
+}
+
+.win-sym-04 {
+    animation: winBellRing 0.65s infinite ease-in-out;
+}
+
+/* ⭐ sym_05: 불가사리 - 스타 스윙 & 트윙클 (빛 70% 감쇠) */
+@keyframes winStarSwing {
+
+    0%,
+    100% {
+        transform: rotate(0deg) scale(1);
+        filter: drop-shadow(0 0 1px rgba(255, 140, 0, 0.3)) brightness(1);
+    }
+
+    25% {
+        transform: rotate(-6deg) scale(1.08);
+        filter: drop-shadow(0 0 4px rgba(255, 152, 0, 0.4)) drop-shadow(0 0 1px rgba(255, 224, 130, 0.3)) brightness(1.08);
+    }
+
+    75% {
+        transform: rotate(6deg) scale(1.08);
+        filter: drop-shadow(0 0 4px rgba(255, 179, 0, 0.4)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.3)) brightness(1.08);
+    }
+}
+
+.win-sym-05 {
+    animation: winStarSwing 0.7s infinite ease-in-out;
+}
+
+/* 🎯 sym_06: 타겟/과녁 - 불스아이 펄스 & 임팩트 (빛 70% 감쇠) */
+@keyframes winTargetPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 1px rgba(255, 50, 50, 0.3)) brightness(1);
+    }
+
+    30% {
+        transform: scale(1.13);
+        filter: drop-shadow(0 0 5px rgba(255, 23, 68, 0.45)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)) brightness(1.1);
+    }
+
+    60% {
+        transform: scale(0.97);
+        filter: drop-shadow(0 0 2px rgba(255, 82, 82, 0.3)) brightness(1.03);
+    }
+}
+
+.win-sym-06 {
+    animation: winTargetPulse 0.6s infinite ease-in-out;
+}
+
+/* 🍫 sym_07: 1-BAR, 🍫🍫 sym_08: 2-BAR, 🍫🍫🍫 sym_09: 3-BAR - [대표님 지시] 빛/반짝임 추가 30% 감쇠 (극도로 은은하고 편안한 네온) */
+@keyframes winBar1Sweep {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 1px rgba(0, 200, 255, 0.25)) brightness(1);
+    }
+
+    50% {
+        transform: scale(1.08);
+        filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.5)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.35)) brightness(1.12);
+    }
+}
+
+.win-sym-07 {
+    animation: winBar1Sweep 0.7s infinite ease-in-out;
+}
+
+.win-sym-08 {
+    animation: winBar1Sweep 0.7s infinite ease-in-out;
+}
+
+.win-sym-09 {
+    animation: winBar1Sweep 0.7s infinite ease-in-out;
+}
+
+/* 7️⃣ sym_10: 행운의 7 - 골드 인페르노 플레임 (빛 70% 감쇠) */
+@keyframes winSevenFlame {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 2px rgba(255, 30, 0, 0.3)) drop-shadow(0 0 2px rgba(255, 215, 0, 0.25)) brightness(1);
+    }
+
+    50% {
+        transform: scale(1.12);
+        filter: drop-shadow(0 0 5px rgba(255, 23, 68, 0.45)) drop-shadow(0 0 3px rgba(255, 215, 0, 0.35)) brightness(1.12);
+    }
+}
+
+.win-sym-10 {
+    animation: winSevenFlame 0.65s infinite ease-in-out;
+}
+
+/* 💎 sym_11: 다이아몬드 - 크리스탈 십자 플레어 & 프리즘 (빛 70% 감쇠) */
+@keyframes winDiamondFlare {
+
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+        filter: drop-shadow(0 0 1px rgba(130, 220, 255, 0.3)) brightness(1);
+    }
+
+    35% {
+        transform: scale(1.1) rotate(-3deg);
+        filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.45)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3)) brightness(1.12);
+    }
+
+    70% {
+        transform: scale(1.06) rotate(3deg);
+        filter: drop-shadow(0 0 3px rgba(128, 216, 255, 0.3)) brightness(1.07);
+    }
+}
+
+.win-sym-11 {
+    animation: winDiamondFlare 0.7s infinite ease-in-out;
+}
+
+/* ♠️ sym_12: 스페이드 A (Ace of Spades) - [대표님 지정 방안 1] 실버 블레이드 슬래시 & 에이스 광채 (빛 70% 감쇠) */
+@keyframes winSpadeBladeSlash {
+
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+        filter: drop-shadow(0 0 1px rgba(220, 235, 255, 0.3)) brightness(1);
+    }
+
+    25% {
+        transform: scale(1.11) rotate(-4deg);
+        filter: drop-shadow(-1px -1px 3px rgba(255, 255, 255, 0.35)) drop-shadow(2px 2px 4px rgba(74, 144, 226, 0.4)) brightness(1.12);
+    }
+
+    55% {
+        transform: scale(1.13) rotate(3deg);
+        filter: drop-shadow(2px -1px 4px rgba(255, 255, 255, 0.35)) drop-shadow(-2px 2px 5px rgba(0, 210, 255, 0.4)) brightness(1.13);
+    }
+
+    80% {
+        transform: scale(1.05) rotate(-1deg);
+        filter: drop-shadow(0 0 2px rgba(224, 242, 254, 0.3)) brightness(1.06);
+    }
+}
+
+.win-sym-12 {
+    animation: winSpadeBladeSlash 0.65s infinite ease-in-out;
 }
 
 /* =========================================
@@ -1038,9 +1305,173 @@ body {
     letter-spacing: 1px;
 }
 
-.custom-modal-card .modal-body {
-    padding: 14px 16px;
-    overflow-y: auto;
+/* 🌊 범용 시스템 알림 & 다이얼로그 (Ocean Glass Dialog) */
+.system-dialog-overlay {
+    z-index: 600;
+    background: rgba(4, 10, 24, 0.85);
+    backdrop-filter: blur(8px);
+}
+
+.system-dialog-card {
+    max-width: 320px;
+    padding: 22px 18px 18px;
+    text-align: center;
+    border: 1.5px solid #ffd700;
+    border-radius: 14px;
+    background: linear-gradient(155deg, rgba(20, 34, 58, 0.98), rgba(8, 14, 28, 0.99));
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.95), 0 0 22px rgba(255, 215, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    animation: dialogPop 0.22s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes dialogPop {
+    0% {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.dialog-icon-wrap {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1.5px solid rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+    animation: dialogGlowPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes dialogGlowPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+        filter: brightness(1.2);
+    }
+}
+
+.dialog-icon-wrap.type-success {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
+.dialog-icon-wrap.type-info {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.6);
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+}
+
+.dialog-title {
+    color: #ffd700;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.dialog-message {
+    color: #e2e8f0;
+    font-size: 12px;
+    line-height: 1.55;
+    margin-bottom: 12px;
+    word-break: keep-all;
+}
+
+.dialog-info-box {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dialog-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.dialog-info-row strong {
+    font-weight: 800;
+}
+
+.dialog-sub-tip {
+    font-size: 10px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px dashed rgba(56, 189, 248, 0.35);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 14px;
+    line-height: 1.4;
+}
+
+.dialog-action-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.btn-dialog-confirm {
+    flex: 1;
+    background: linear-gradient(135deg, #ffd700, #f59e0b);
+    border: 1px solid #ffd700;
+    border-radius: 8px;
+    color: #000;
+    font-weight: 900;
+    font-size: 12.5px;
+    padding: 9px 0;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+    transition: all 0.15s ease;
+}
+
+.btn-dialog-confirm:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.btn-dialog-confirm:active {
+    transform: scale(0.97);
+}
+
+.btn-dialog-cancel {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 9px 0;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-dialog-cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
 }
 
 /* 💱 Exchange Modal UI */
@@ -1853,21 +2284,81 @@ body {
     color: #e2e8f0;
 }
 
-/* 💱 G코인 환전기 카드 */
+/* 💱 중앙 환전소 (SP ⇄ G-Coin 듀얼 탭) */
 .gcoin-exchange-card {
-    background: linear-gradient(145deg, rgba(20, 30, 55, 0.8), rgba(10, 15, 30, 0.95));
+    background: linear-gradient(145deg, rgba(20, 30, 55, 0.92), rgba(10, 15, 30, 0.98));
     border: 1px solid rgba(255, 215, 0, 0.4);
     border-radius: 8px;
     padding: 10px 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
-.gex-title {
+.gex-tabs-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 3px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gex-tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 6px 4px;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.gex-tab-btn .tab-sub {
+    font-size: 8.5px;
+    opacity: 0.85;
+}
+
+.gex-tab-btn.active#tab-btn-deposit {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.2));
+    border-color: rgba(255, 215, 0, 0.7);
     color: #ffd700;
-    font-size: 12px;
-    font-weight: 900;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.25);
+}
+
+.gex-tab-btn.active#tab-btn-withdraw {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(14, 165, 233, 0.2));
+    border-color: rgba(56, 189, 248, 0.7);
+    color: #38bdf8;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+.gex-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: gexFadeIn 0.2s ease;
+}
+
+@keyframes gexFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .gex-rate-desc {
@@ -1884,13 +2375,14 @@ body {
     justify-content: space-between;
     font-size: 11px;
     color: #cbd5e1;
-    padding: 4px 0;
+    padding: 3px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
 .gex-action-row {
     display: flex;
-    gap: 8px;
-    margin-top: 4px;
+    gap: 6px;
+    margin-top: 2px;
 }
 
 .btn-gex-quick {
@@ -1900,8 +2392,8 @@ body {
     color: #000;
     font-weight: 900;
     font-size: 11px;
-    padding: 7px 0;
-    border-radius: 6px;
+    padding: 6px 0;
+    border-radius: 5px;
     cursor: pointer;
     transition: transform 0.1s ease, filter 0.1s ease;
 }
@@ -1911,7 +2403,130 @@ body {
 }
 
 .btn-gex-quick:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
+}
+
+.gex-withdraw-presets {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 5px;
+}
+
+.btn-withdraw-preset {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(2, 132, 199, 0.3));
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 6px;
+    padding: 6px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-withdraw-preset:hover {
+    filter: brightness(1.2);
+    border-color: #38bdf8;
+    transform: translateY(-1px);
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.3);
+}
+
+.btn-withdraw-preset:active {
+    transform: scale(0.96);
+}
+
+.btn-withdraw-preset .preset-title {
+    font-size: 10.5px;
+    font-weight: 900;
+    color: #38bdf8;
+}
+
+.btn-withdraw-preset .preset-desc {
+    font-size: 8px;
+    color: #cbd5e1;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.btn-preset-all {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.35));
+    border-color: rgba(248, 113, 113, 0.5);
+}
+
+.btn-preset-all .preset-title {
+    color: #f87171;
+}
+
+.gex-custom-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.gex-input {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 5px;
+    padding: 6px 8px;
+    color: #fff;
+    font-size: 10.5px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.gex-input:focus {
+    border-color: #ffd700;
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+}
+
+.gex-input.input-withdraw:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.3);
+}
+
+.btn-gex-submit {
+    background: linear-gradient(135deg, #ffd700, #f59e0b);
+    border: 1px solid #ffd700;
+    color: #000;
+    font-weight: 900;
+    font-size: 10.5px;
+    padding: 0 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: filter 0.1s ease, transform 0.1s ease;
+    white-space: nowrap;
+}
+
+.btn-gex-submit:hover {
+    filter: brightness(1.15);
+}
+
+.btn-gex-submit:active {
+    transform: scale(0.96);
+}
+
+.btn-withdraw-submit {
+    background: linear-gradient(135deg, #38bdf8, #0284c7);
+    border-color: #38bdf8;
+    color: #000;
+}
+
+.gex-tip-text {
+    font-size: 9px;
+    color: #94a3b8;
+    line-height: 1.3;
+}
+
+.gex-preview-badge {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px dashed rgba(56, 189, 248, 0.4);
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 9.5px;
+    color: #38bdf8;
+    line-height: 1.35;
 }
 
 /* 🛍️ 럭셔리 부티크 상점 */
