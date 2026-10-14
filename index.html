@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Magic Oceans - Slot Game</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=20261014_33">
 </head>
 <body>
 
@@ -25,17 +25,65 @@
             <img src="assets/btn_menu.png" class="btn-menu" id="btn-menu" alt="Menu">
         </header>
 
-        <!-- 배당 인디케이터 창 -->
-        <div class="multiplier-window" id="multiplier-window">
-            <div class="multiplier-strip" id="multiplier-strip"></div>
+        <!-- 🏆 [스케치 좌측] 실시간 랭킹 미니보드 -->
+        <div class="ranking-mini-board" id="ranking-mini-board" title="전체 랭킹 보기">
+            <div class="ranking-mini-header">
+                <span class="ranking-badge">TOP 5</span>
+                <span class="ranking-title">Rank</span>
+                <span class="ranking-arrow">▶</span>
+            </div>
+            <ul class="ranking-mini-list" id="ranking-mini-list">
+                <li class="ranking-item rank-1" data-user="robinhood"><span class="rank-num">1</span> <span class="rank-name">robinhood</span></li>
+                <li class="ranking-item rank-2" data-user="martin125"><span class="rank-num">2</span> <span class="rank-name">martin125</span></li>
+                <li class="ranking-item rank-3" data-user="anfisanna"><span class="rank-num">3</span> <span class="rank-name">anfisanna</span></li>
+                <li class="ranking-item rank-4" data-user="sniper99"><span class="rank-num">4</span> <span class="rank-name">sniper99</span></li>
+                <li class="ranking-item rank-5" data-user="superman26"><span class="rank-num">5</span> <span class="rank-name">superman26</span></li>
+            </ul>
         </div>
 
-        <!-- 3개 릴 및 잭팟 라인 -->
-        <div class="reels-container">
-            <div class="reel"><div class="symbol-strip" id="reel1-strip"></div></div>
-            <div class="reel"><div class="symbol-strip" id="reel2-strip"></div></div>
-            <div class="reel"><div class="symbol-strip" id="reel3-strip"></div></div>
-            <img src="assets/jackpot line.png" class="jackpot-line" id="jackpot-line" alt="Jackpot Line">
+        <!-- 🎰 [Center HUD] Live Super/Mega Jackpot Ticker -->
+        <div class="jackpot-ticker-wrap" id="jackpot-ticker-wrap" style="display: none;">
+            <div class="jackpot-ticker-card">
+                <div class="ticker-content" id="jackpot-ticker-content">
+                    <div><span class="ticker-user">rotiman</span> <span class="ticker-amount">"10,000,000 SP"</span></div>
+                    <div><span class="ticker-type">MEGA JACKPOT WIN!</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ⚡ [스케치 우측] 3대 수직 퀵 메뉴 (아바타 / 상점 / 커뮤니티) -->
+        <div class="quick-menu-col" id="quick-menu-col">
+            <button type="button" class="btn-quick-nav btn-nav-avatar" id="btn-nav-avatar" title="나의 아바타 & 자산 쇼케이스">
+                <span class="nav-icon">👔</span>
+                <span class="nav-label">My Avatar</span>
+            </button>
+            <button type="button" class="btn-quick-nav btn-nav-store" id="btn-nav-store" title="럭셔리 부티크 상점">
+                <span class="nav-icon">🛍️</span>
+                <span class="nav-label">Store</span>
+            </button>
+            <button type="button" class="btn-quick-nav btn-nav-community" id="btn-nav-community" title="커뮤니티 & 개인상점">
+                <span class="nav-icon">💬</span>
+                <span class="nav-label">Commu</span>
+            </button>
+        </div>
+
+        <!-- 🎰 [통합 3D 릴 샌드위치 데크] 배당 릴 + 3대 메인 릴 + 골드 프레임 오버레이 -->
+        <div class="slot-machine-deck" id="slot-machine-deck">
+            <!-- 배당 인디케이터 창 -->
+            <div class="multiplier-window" id="multiplier-window">
+                <div class="multiplier-strip" id="multiplier-strip"></div>
+            </div>
+
+            <!-- 3개 릴 및 잭팟 라인 -->
+            <div class="reels-container">
+                <div class="reel"><div class="symbol-strip" id="reel1-strip"></div></div>
+                <div class="reel"><div class="symbol-strip" id="reel2-strip"></div></div>
+                <div class="reel"><div class="symbol-strip" id="reel3-strip"></div></div>
+                <img src="assets/jackpot line.png" class="jackpot-line" id="jackpot-line" alt="Jackpot Line">
+            </div>
+
+            <!-- 릴 골드 프레임 오버레이 (누끼 투명 PNG) -->
+            <img src="assets/Reel slot bg image-2.png" class="reel-frame-overlay" id="reel-frame-overlay" alt="Reel Gold Frame">
         </div>
 
         <!-- 하단 컨트롤 패널 -->
@@ -43,8 +91,8 @@
             <div class="bet-text" id="bet-text">BET 1,000</div>
             
             <div class="win-box">
-                <span class="win-label">WIN</span>
                 <span class="win-amount" id="win-amount">0</span>
+                <span class="win-label">WIN</span>
             </div>
 
             <!-- 오토 스핀 횟수 선택 팝업 -->
@@ -260,6 +308,166 @@
                 </div>
             </div>
         </div>
+
+        <!-- 🏆 전체 부호 랭킹 (Leaderboard) 모달 -->
+        <div class="custom-modal-overlay" id="ranking-modal-overlay">
+            <div class="custom-modal-card ranking-card">
+                <div class="modal-header">
+                    <span class="modal-title">👑 대부호 랭킹 & 명예의 전당</span>
+                    <button class="btn-close" id="btn-ranking-close">✕</button>
+                </div>
+                <div class="modal-body ranking-body">
+                    <div class="ranking-desc-badge">🏆 유저를 터치하면 초호화 자산 쇼케이스를 엿볼 수 있습니다!</div>
+                    <div class="ranking-list-wrap" id="ranking-full-list">
+                        <!-- JS 렌더링 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 💎 타 유저 쇼케이스 (Showcase Viewer) 팝업 모달 -->
+        <div class="custom-modal-overlay" id="user-profile-modal-overlay">
+            <div class="custom-modal-card profile-card">
+                <div class="modal-header">
+                    <span class="modal-title" id="profile-title">💎 VIP 쇼케이스 엿보기</span>
+                    <button class="btn-close" id="btn-profile-close">✕</button>
+                </div>
+                <div class="modal-body profile-body">
+                    <div class="showcase-stage" id="profile-showcase-stage">
+                        <div class="showcase-bg-preview" id="profile-bg-preview">🏰</div>
+                        <div class="showcase-vehicle-preview" id="profile-vehicle-preview">🏎️</div>
+                        <div class="showcase-avatar-preview" id="profile-avatar-preview">🤵</div>
+                    </div>
+                    <div class="profile-info-card">
+                        <div class="profile-name-row">
+                            <span class="profile-vip-badge" id="profile-vip-badge">👑 대양의 지배자</span>
+                            <span class="profile-username" id="profile-username">robinhood</span>
+                        </div>
+                        <div class="profile-stats-grid">
+                            <div class="p-stat-box">
+                                <span class="p-label">총 자산 가치</span>
+                                <span class="p-val highlight-gold" id="profile-networth">520,000 G</span>
+                            </div>
+                            <div class="p-stat-box">
+                                <span class="p-label">최대 잭팟 기록</span>
+                                <span class="p-val highlight-sp" id="profile-max-jp">50,000,000 SP</span>
+                            </div>
+                            <div class="p-stat-box">
+                                <span class="p-label">보유 부동산</span>
+                                <span class="p-val" id="profile-estate">아틀란티스 해저 궁전</span>
+                            </div>
+                            <div class="p-stat-box">
+                                <span class="p-label">럭셔리 탈것</span>
+                                <span class="p-val" id="profile-vehicle">120ft 메가 요트</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 👔 나의 아바타 & 자산 쇼케이스 (My Avatar Dashboard) 모달 -->
+        <div class="custom-modal-overlay" id="my-avatar-modal-overlay">
+            <div class="custom-modal-card avatar-dashboard-card">
+                <div class="modal-header">
+                    <span class="modal-title">👔 나의 아바타 & 럭셔리 쇼케이스</span>
+                    <button class="btn-close" id="btn-my-avatar-close">✕</button>
+                </div>
+                <div class="modal-body avatar-dashboard-body">
+                    <div class="my-showcase-stage" id="my-showcase-stage">
+                        <div class="showcase-bg-preview" id="my-bg-preview">🏝️</div>
+                        <div class="showcase-vehicle-preview" id="my-vehicle-preview">🚗</div>
+                        <div class="showcase-avatar-preview" id="my-avatar-preview">🧑‍💼</div>
+                        <div class="my-title-badge" id="my-title-badge">바다의 모험가</div>
+                    </div>
+                    
+                    <div class="my-assets-summary">
+                        <div class="asset-chip-row">
+                            <div class="asset-chip"><span class="ac-icon">🪙</span> 보유 G코인: <strong class="highlight-gold" id="my-gcoin-val">50 G</strong></div>
+                            <div class="asset-chip"><span class="ac-icon">💎</span> 총 자산 지수: <strong class="highlight-gold" id="my-net-worth">50,110</strong></div>
+                        </div>
+                        <div class="my-stats-pills">
+                            <span class="stat-pill">최대 잭팟: <strong id="my-max-jackpot">0 SP</strong></span>
+                            <span class="stat-pill">누적 스핀: <strong id="my-spin-count">0회</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- 💱 SP ➔ G코인 즉시 환전소 -->
+                    <div class="gcoin-exchange-card">
+                        <div class="gex-title">💱 잭팟금(SP) ➔ G코인 교환기</div>
+                        <div class="gex-rate-desc">교환 비율: <strong>10,000 SP = 1 G코인</strong> (수수료 0%)</div>
+                        <div class="gex-balance-info">
+                            <span>보유 당첨금: <strong class="highlight-sp" id="gex-current-sp">0 SP</strong></span>
+                            <span>➔ 교환 가능: <strong class="highlight-gold" id="gex-max-gcoin">0 G</strong></span>
+                        </div>
+                        <div class="gex-action-row">
+                            <button type="button" class="btn-gex-quick" id="btn-gex-half">50% 교환</button>
+                            <button type="button" class="btn-gex-quick" id="btn-gex-all">전액 교환</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🛍️ 럭셔리 부티크 상점 (Luxury Store) 모달 -->
+        <div class="custom-modal-overlay" id="luxury-store-modal-overlay">
+            <div class="custom-modal-card store-card">
+                <div class="modal-header">
+                    <span class="modal-title">🛍️ 럭셔리 부티크 상점</span>
+                    <div class="store-wallet"><span class="sw-label">내 G코인:</span> <span class="sw-val highlight-gold" id="store-gcoin-val">50 G</span></div>
+                    <button class="btn-close" id="btn-store-close">✕</button>
+                </div>
+                <div class="modal-body store-body">
+                    <div class="store-tabs-nav">
+                        <button type="button" class="store-tab active" data-cat="outfit">👔 의상/외형</button>
+                        <button type="button" class="store-tab" data-cat="estate">🏰 배경/부동산</button>
+                        <button type="button" class="store-tab" data-cat="vehicle">🏎️ 럭셔리 탈것</button>
+                        <button type="button" class="store-tab" data-cat="badge">👑 칭호/뱃지</button>
+                    </div>
+                    <div class="store-items-grid" id="store-items-grid">
+                        <!-- JS 렌더링 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 💬 커뮤니티 & 개인상점 (VIP Community & Market) 모달 -->
+        <div class="custom-modal-overlay" id="community-modal-overlay">
+            <div class="custom-modal-card community-card">
+                <div class="modal-header">
+                    <span class="modal-title">💬 VIP 라운지 커뮤니티 & 마켓</span>
+                    <button class="btn-close" id="btn-community-close">✕</button>
+                </div>
+                <div class="modal-body community-body">
+                    <div class="community-tabs-nav">
+                        <button type="button" class="comm-tab active" data-tab="chat">💬 라운지 톡</button>
+                        <button type="button" class="comm-tab" data-tab="market">🏷️ 개인상점 & 경매장</button>
+                    </div>
+                    <div class="comm-tab-pane active" id="comm-pane-chat">
+                        <div class="chat-feed-box" id="community-chat-feed">
+                            <!-- 실시간 채팅 메시지 -->
+                        </div>
+                        <div class="chat-input-bar">
+                            <input type="text" id="community-chat-input" placeholder="대화 내용을 입력하세요..." maxlength="50">
+                            <button type="button" class="btn-chat-send" id="btn-chat-send">전송</button>
+                        </div>
+                    </div>
+                    <div class="comm-tab-pane" id="comm-pane-market" style="display: none;">
+                        <div class="market-hero-card">
+                            <div class="market-hero-title">🏛️ VIP 개인 상점 & 경매장</div>
+                            <div class="market-hero-desc">유저 간 희귀(Rare 이상) 한정판 아바타 및 슈퍼카 자산 거래 시스템입니다.</div>
+                            <div class="market-action-banner">
+                                <span class="market-badge">공식 인증 거래소</span>
+                                <span class="market-fee">거래 수수료 3% (전액 골드 소각)</span>
+                            </div>
+                        </div>
+                        <div class="market-item-list" id="community-market-list">
+                            <!-- 개인 상점 매물 리스트 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 📱 스마트폰 하단 외부 블랙 여백 도킹 배너 슬롯 (16:9 비율 왜곡 0%, 게임 UI 침범 0%) -->
@@ -273,8 +481,9 @@
         </div>
     </aside>
 
-    <!-- 기밀 수학 엔진 및 통합 게임 스크립트 -->
+    <!-- 기밀 수학 엔진, 통합 슬롯 스크립트, 아바타 및 자산 경제 시스템 -->
     <script src="jackpot-config.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=20261014_32"></script>
+    <script src="avatar-system.js?v=20261014_25"></script>
 </body>
 </html>

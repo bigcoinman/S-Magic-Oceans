@@ -280,10 +280,30 @@ class GameUI {
     }
 
     bindEvents(onSpinClick, onAutoSelect, onAutoToggle, onMenuAction, onChipClick) {
-        // 스핀 버튼 클릭
+        // 스핀 버튼 클릭 및 3D 물리 타격감 피드백 (오토스핀 버튼과 100% 독립 분리)
         if (this.btnSpinEl) {
+            const triggerSpinPress = (e) => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                if (this.btnSpinEl.classList.contains('disabled')) return;
+                this.btnSpinEl.classList.add('pressed');
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    try { navigator.vibrate(25); } catch (err) {}
+                }
+            };
+            const releaseSpinPress = (e) => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                this.btnSpinEl.classList.remove('pressed');
+            };
+
+            this.btnSpinEl.addEventListener('pointerdown', triggerSpinPress);
+            this.btnSpinEl.addEventListener('pointerup', releaseSpinPress);
+            this.btnSpinEl.addEventListener('pointerleave', releaseSpinPress);
+            this.btnSpinEl.addEventListener('pointercancel', releaseSpinPress);
+
             this.btnSpinEl.addEventListener('click', (e) => {
                 e.stopPropagation();
+                triggerSpinPress();
+                setTimeout(releaseSpinPress, 120);
                 onSpinClick();
             });
         }
@@ -297,10 +317,30 @@ class GameUI {
             });
         }
 
-        // 오토스핀 버튼 클릭
+        // 오토스핀 버튼 클릭 및 타격감 (스핀 버튼과 100% 독립 분리)
         if (this.btnAutoEl) {
+            const triggerAutoPress = (e) => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                if (this.btnAutoEl.classList.contains('disabled')) return;
+                this.btnAutoEl.classList.add('pressed');
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    try { navigator.vibrate(15); } catch (err) {}
+                }
+            };
+            const releaseAutoPress = (e) => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                this.btnAutoEl.classList.remove('pressed');
+            };
+
+            this.btnAutoEl.addEventListener('pointerdown', triggerAutoPress);
+            this.btnAutoEl.addEventListener('pointerup', releaseAutoPress);
+            this.btnAutoEl.addEventListener('pointerleave', releaseAutoPress);
+            this.btnAutoEl.addEventListener('pointercancel', releaseAutoPress);
+
             this.btnAutoEl.addEventListener('click', (e) => {
                 e.stopPropagation();
+                triggerAutoPress();
+                setTimeout(releaseAutoPress, 120);
                 onAutoToggle();
             });
         }
@@ -460,7 +500,21 @@ class GameUI {
 
     setWinDisplay(amount) {
         if (!this.winAmountEl) return;
-        this.winAmountEl.textContent = amount.toLocaleString();
+        const text = typeof amount === 'number' ? amount.toLocaleString() : String(amount);
+        this.updateWinAmountText(text);
+    }
+
+    updateWinAmountText(text) {
+        if (!this.winAmountEl) return;
+        this.winAmountEl.textContent = text;
+        const len = text.length;
+        if (len > 12) {
+            this.winAmountEl.style.fontSize = '1.55vh';
+        } else if (len > 9) {
+            this.winAmountEl.style.fontSize = '1.82vh';
+        } else {
+            this.winAmountEl.style.fontSize = '';
+        }
     }
 
     updateSoundStatus(isOn) {
@@ -481,8 +535,9 @@ class GameUI {
 
     spinReelsSequence(targetReels, onReelStop) {
         return new Promise((resolve) => {
-            const reelDurations = [1.2, 1.6, 2.0];
-            const blurCountPerReel = [16, 22, 28];
+            // 🎯 대표님 황금 박자 모델 (방안 A): 1번 릴 36개(3바퀴)/1.8초, 2번 44개/2.2초, 3번 52개/2.6초
+            const reelDurations = [1.8, 2.2, 2.6];
+            const blurCountPerReel = [36, 44, 52];
             let completed = 0;
 
             this.reels.forEach((id, index) => {
@@ -571,8 +626,8 @@ class GameUI {
             const currentMultIndex = this.currentMultIndex || 0;
             const currentVal = this.multipliersList[currentMultIndex] || 1;
             const targetVal = this.multipliersList[targetMultIndex] || 1;
-            const baseLoops = 24;
-            const duration = 3.0; // 3번 릴(2.0초) 정지 후 정확히 1.0초 뒤(3.0초) 정지
+            const baseLoops = 36; // 36개 배당 심볼 맹렬한 회전
+            const duration = 3.4; // 🎯 대표님 지정 (방안 A): 정확히 3.4초에 피날레 콰광 착지 (3번 릴 2.6초 후 0.8초 뒤)
 
             // 1. 위에서 아래로 회전하기 위한 스트립 구축 (타겟 배당 -> 잔상 배당들 -> 현재 배당)
             strip.innerHTML = '';
@@ -655,11 +710,11 @@ class GameUI {
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const current = Math.floor(start + (end - start) * progress);
-            element.textContent = current.toLocaleString();
+            this.updateWinAmountText(current.toLocaleString());
             if (progress < 1) {
                 requestAnimationFrame(update);
             } else {
-                element.textContent = end.toLocaleString();
+                this.updateWinAmountText(end.toLocaleString());
             }
         };
         requestAnimationFrame(update);
@@ -1048,6 +1103,9 @@ class GameEngine {
         }
 
         this.economy.deductBet();
+        if (typeof window !== 'undefined' && window.avatarSystem && window.avatarSystem.profile) {
+            window.avatarSystem.profile.recordSpin();
+        }
         this.state = 'SPINNING';
         this.ui.setButtonsDisabled(true, this.isAutoSpinning);
         this.ui.updateEconomyDisplay(this.economy);
@@ -1090,6 +1148,16 @@ class GameEngine {
 
         if (result.isWin) {
             this.economy.addWin(result.winAmount);
+            if (typeof window !== 'undefined' && window.avatarSystem && window.avatarSystem.profile) {
+                window.avatarSystem.profile.recordWin(result.winAmount);
+                if (result.winAmount >= 100000) {
+                    window.avatarSystem.triggerJackpotTicker(
+                        window.avatarSystem.profile.state.username,
+                        result.winAmount,
+                        result.winAmount >= 1000000 ? 'MEGA JACKPOT' : 'SUPER JACKPOT'
+                    );
+                }
+            }
             this.ui.showWinAnimation(result.winAmount);
             this.audio.playWin();
             this.ui.updateEconomyDisplay(this.economy);

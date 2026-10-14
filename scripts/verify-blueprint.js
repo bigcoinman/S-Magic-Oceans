@@ -31,7 +31,7 @@ function assertRule(name, condition, errorDetail) {
 // [검문소 1] 자바스크립트 구문 문법 무결성 전수 검사 (Zero SyntaxError)
 // ----------------------------------------------------------------------------
 console.log('--- [검문소 1] 자바스크립트 구문 문법 무결성 (node -c) ---');
-const jsFiles = ['script.js', 'jackpot-config.js'];
+const jsFiles = ['script.js', 'jackpot-config.js', 'avatar-system.js'];
 for (const file of jsFiles) {
     if (fs.existsSync(file)) {
         try {
